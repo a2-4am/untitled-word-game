@@ -68,8 +68,7 @@ tbl5ptr=$da ;16-bit
 depth=$d9
 num_children=$d8
 preflen=$d7
-prefix=$d2 ;word_size bytes
-theword=$cd ;word_size bytes
+prefix=$cd ;word_size * 2 bytes
 match=$cc
 bits=$cb
 

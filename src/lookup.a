@@ -63,7 +63,7 @@ alltbl5
 ;------------------------------------------------------------------------------
 ;nth - finds and returns nth word from vetted table
 ;requires nstore to be set to value of n
-;returns found word at address "theword"($dd)
+;returns found word at address "gSolution"
 ;------------------------------------------------------------------------------
 nth
         lda    #<vetlocs
@@ -82,8 +82,8 @@ nth
         bcc    .foundbase
         stx    nstore
         sta    nstore + 1
-        lda    locstore
-        adc    #locsize - 1
+        tya             ;=#locsize - 1
+        adc    locstore
         sta    locstore
         bcc    .search
         inc    locstore + 1
@@ -177,7 +177,7 @@ read_payload_r
 ;;        bcc    +
 ;;        iny
 +       jsr    read_varint
-        ora    #'A'
+        adc    #'A' - 1
 ;;        tax
 ;;        lda    alphabet, x
         ldx    preflen
@@ -187,14 +187,15 @@ read_payload_r
         bne    .notword
         lda    match
         sta    .copyop + 1
-        ldx    #word_size
+        ldx    #word_size * 2
 .copyprefix
-        lda    prefix - 1, x
-        sta    theword - 1, x
-        eor    cmpword - 1, x
+        lda    prefix - 2, x
+        sta    gSolution - 2, x
+        eor    cmpword - 2, x
 .copyop
         bne    breakbeg ;SMC
 breakbeg
+        dex
         dex
         bne    .copyprefix
         tay
@@ -216,6 +217,7 @@ zeroind stx    nstore
         pha
         lda    preflen
         pha
+        inc    preflen
         inc    preflen
         inc    depth
         jsr    read_payload_r
@@ -321,11 +323,11 @@ savestate
         sta    .savejmp + 4
         pla
         sta    .savejmp + 1
-        ldy    #statesize - 1
+        ldx    #statesize - 1
 .pushstate
-        lda    state, y
+        lda    state, x
         pha
-        dey
+        dex
         bpl    .pushstate
 .savejmp
         lda    #0       ;SMC
