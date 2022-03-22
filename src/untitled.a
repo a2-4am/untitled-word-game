@@ -285,7 +285,7 @@ SubmitGuess
          bcc   NewGuess
 Lose
          +LDADDR sLose
-         bne   +                     ; always branches
+         beq   +                     ; always branches
 Win
          +LDADDR sWin
 +        jsr   PrintAt17
