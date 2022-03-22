@@ -133,7 +133,7 @@ exists
         jsr    checkres
         cmp    #1
         pla
-        bcc    checkret
+        bcc    checkres
         adc    #<((alllocs - locsize) - 1)
         sta    locstore
         lda    #>((alllocs - locsize) - 1)
