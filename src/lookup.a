@@ -122,11 +122,7 @@ exists
         adc    nstore                ; *6 (= *locsize)
         pha
         adc    #<(vetlocs - locsize)
-        sta    locstore
-        lda    #>(vetlocs - locsize)
-        adc    #0
-        sta    locstore + 1
-        jsr    copystate
+        jsr    loccopy
         ldx    #$C9                  ; CMP
         ldy    #breakend - breakbeg
         jsr    tryvet
@@ -135,11 +131,7 @@ exists
         pla
         bcc    checkres
         adc    #<((alllocs - locsize) - 1)
-        sta    locstore
-        lda    #>((alllocs - locsize) - 1)
-        adc    #0
-        sta    locstore + 1
-        jsr    copystate
+        jsr    loccopy
         lda    #<alltbl0
         jsr    settblbase
 checkres
@@ -268,10 +260,10 @@ read_int
         rol    left
 
 .updval
+        asl    left
         asl    fetched
         rol    value
         rol    value + 1
-        asl    left
         dex
         bne    .shift
         rts
@@ -293,8 +285,7 @@ read_varint
         ldx    #8
         jsr    readcopy
         tax
-        jsr    read_int
-        clc
+        jsr    read_int              ; carry cleared
         jsr    copytblw
         dec    index
         bne    .readtbl
@@ -362,6 +353,13 @@ copystate
         dey
         bpl    .copystate
         rts
+
+loccopy
+        sta    locstore
+        lda    #>(vetlocs - locsize)
+        adc    #0
+        sta    locstore + 1
+        bcc    copystate             ; always
 
 reststate
         pla
