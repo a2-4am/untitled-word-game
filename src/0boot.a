@@ -1,0 +1,374 @@
+;license:BSD-3-Clause
+;bootable zpage seek/read
+;copyright (c) Peter Ferrie 2015-16, 2018
+;thanks to 4am for inspiration and testing
+;assemble using ACME
+;this version has been heavily modified for use within Untitled Word Game
+;you probably want the original at https://github.com/peterferrie/0boot
+!cpu 6502
+!to "build/0boot",plain
+*=$800
+        tracks    = $04         ;user-defined
+        first_trk = $01         ;user-defined
+        address   = $03         ;user-defined, high byte of first page
+        entry     = $6F8        ;user-defined
+        sectors   = $00         ;user-defined, sectors to load from partial track (increase tracks count first)
+        interleave= 1           ;user-defined, to retain .dsk sector ordering
+        multi_regn= 0           ;user-defined, load to non-sequential addresses
+        !if multi_regn=1 {
+          !macro region {region !byte $60,0,$0,0,$0,0,$0,0,$0,0,$0,0,$0,0,$0,0,$0,0,$0,0,$0,0,$0,0}
+;          !macro region {region !byte $d1,0,$d1,0,$d1,0,$d1,0,$d1,0,$d1,0,$d1,0,$d1,0,$d1,0,$d1,0,$d1,0,$d1,0}
+                                ;user-defined
+                                ;assign every '$d1' from left
+                                ;for track with alternative address
+                                ;or zero to continue from last address
+                                ;beginning with second track
+                                ;array size = tracks*2
+        }
+        version   = 3
+
+        ;memory usage:
+        ;16 bytes ($100-$10F)
+        interleavetbl = $100
+        ;86 bytes ($110-165) dynamic table (2-bit array)
+        bit2tbl   = $110
+        ;106 bytes ($166-1CF) static table
+        preshift  = $166
+        ;256 bytes ($200-2FF) static table
+        grouped   = $200
+
+         !source "src/constants.a"              ; no code
+         !source "src/macros.a"                 ; no code
+
+        !byte   1               ;we'll read the other one ourselves
+        lsr                     ;check sector number
+        bne     +               ;branch if not 1
+        inc     $3d             ;increment sector (faster to find)
+        txa
+        jsr     $f87b
+        ora     #$c0            ;slot to PROM base
+        pha
+        lda     #$5b            ;read-1
+        pha
+        rts
+
+        ;the following TAY is a workaround for a CFFA bug
+        ;the bug is that Y isn't zero on entry
+        ;the workaround sets it to one instead
+        ;it's not zero, but it's better than #$10
+
++       tay
+        txa
+        ora     #$8c            ;slot to Q6L
+-       ldx     $900, y
+        stx     $0, y           ;copy RTS to zpage
+        iny
+        bne     -
+-       iny
+        ldx     <(patchtbl-1), y
+        sta     $0, x           ;replace placeholders with Q6L
+        bne     -
+        and     #$f0            ;PHASEOFF
+        sta     <(slotpatch6+1)
+        ora     #8              ;MOTOROFF
+        sta     <(slotpatch8+1)
+!if interleave=1 {
+        ldx     #$0F
+        txs
+-       lda     sectbl, x
+        pha                     ;assumes interleavetbl=$100
+        dex
+        bpl     -
+}
+        lda     #>(entry-1)
+        pha
+        lda     #<(entry-1)
+        pha
+        ldx     #(stackend-addrtbl)
+-       lda     <(addrtbl-1), x
+        pha                     ;copy stack frame
+        dex
+        bne     -
+        ldy     #<(tracks*2)
+
+!if sectors>0 {
+        txa
+        pha
+        lda     #<initsec
+        pha
+        txa
+        bcc     ++
+}
+
+-       txa
+        bcc     +               ;set initially by LSR above
+!if multi_regn=1 {
+        lda     region-2, y
+        beq     no_region
+        pha
+        txa
+        pha
+        lda     #<(set_address-1)
+        pha
+        txa
+
+no_region
+}
+        pha
+        pha
+
+        !byte   $c9             ;CMP masks SEC, clears carry on even rounds
++       sec                     ;SEC is reached on odd rounds
+!if sectors>0 {
+++
+}
+        pha
+        lda     #<(seek-1)
+        pha                     ;push seek twice for two phases
+        dey
+        bne     -
+
+!if first_trk>1 {
+        ldy     #((first_trk-1)*2)
+-       txa
+        pha
+        lda     #<(seek-1)
+        pha                     ;push seek twice for two phases
+        dey
+        bne     -
+}
+
+        ;construct denibbilisation table
+        ;pre-shifted for interleave read
+
+        ldx     #$6a
+-       lda     $36C-1, x
+        asl
+        asl
+        sta+2   preshift-1, x
+        dex
+        bne     -
+
+        ;construct 2-bit group table
+
+        iny
+--      lsr     <(curtrk+1)
+        lsr     <(curtrk+1)
+-       lda     <indextbl, x
+        sta     grouped-1, y
+        inc     <(sector+1)
+        lda     <(sector+1)
+        and     <(curtrk+1)
+        bne     +
+        inx
+        txa
+        and     #3
+        tax
++       iny
+        iny
+        iny
+        iny
+        cpy     #4
+        bcs     -
+        iny
+        cpy     #4
+        bcc     --
+
+preread         ;must exit with carry set!
+        ldx     #$0E
+-       sta     $C000, x
+        dex
+        dex
+        bpl     -
+        rts
+
+!if interleave=1 {
+sectbl !byte 0,7,$e,6,$d,5,$c,4,$b,3,$a,2,9,1,8,$f
+}
+!if multi_regn=1 {
++region
+}
+
+*=$900
+
+;the following lives on sector $0E
+!pseudopc 0 {
+        wait    = $fca8
+
+count
+        !byte   version         ;not copied!
+
+        ;fill address array for one track
+
+inittrk
+        ldx     #$f0
+initsec
+!if sectors>0 {
+        !byte   $2c
+        ldx     #<(-sectors)
+}
+        stx     <count
+rdpage
+        lda     #address
+        sta     <(addrtbl-$f0), x
+        inc     <(rdpage+1)
+        inx
+        bne     rdpage
+read
+--	jsr	readnib
+-       cmp     #$d5
+        bne     --
+	jsr	readnib
+        cmp     #$aa
+        bne     -
+        tay                     ;we need Y=#$AA later
+	jsr	readnib
+        eor     #$ad            ;zero A if match
+        beq     check_mode
+
+        ;if not #$AD, then #$96 is assumed
+
+        ldy     #2              ;volume, track, sector
+-	jsr	readnib
+        rol                     ;set carry
+        sta     <(sector+1)
+	jsr	readnib
+        and     <(sector+1)
+        dey
+        bpl     -
+!if interleave=1 {
+        tax
+        ldy     interleavetbl, x
+}
+        sty     <(sector+1)     ;store index for later
+        ldx     <addrtbl, y     ;fetch corresponding address
+        stx     <(adrpatch6+2)
+        dex
+        stx     <(adrpatch3+2)
+        stx     <(adrpatch5+2)
+        inx                     ;restore value in case it was zero
+branch_read
+        bcs     read            ;branch always
+check_mode
+        cpx     #0
+        beq     read            ;loop if not expecting #$AD
+
+--      sta     <(tmpval+1)     ;zero rolling checksum
+slotpatch1
+-       ldx     $c0d1
+        bpl     -
+        lda+2   preshift-$96, x ;force oversized addressing mode
+        sta+2   bit2tbl-$aa, y  ;store 2-bit array (force oversized addressing mode)
+tmpval
+        eor     #0
+        iny
+        bne     --
+        ldy     #$aa
+slotpatch2
+-       ldx     $c0d1
+        bpl     -
+        eor+2   preshift-$96, x ;force oversized addressing mode
+        ldx+2   bit2tbl-$aa, y  ;force oversized addressing mode
+        eor     grouped+2, x    ;first 86 nibbles use group bits 0-1
+adrpatch3
+        sta     $d156, y
+        iny
+        bne     -
+        and     #$fc
+        ldy     #$aa
+slotpatch3
+-       ldx     $c0d1
+        bpl     -
+        eor+2   preshift-$96, x ;force oversized addressing mode
+        ldx+2   bit2tbl-$aa, y  ;force oversized addressing mode
+        eor     grouped+1, x    ;second 86 nibbles use group bits 2-3
+adrpatch5
+        sta     $d1ac, y
+        iny
+        bne     -
+        and     #$fc
+        ldx     #$ac
+slotpatch4
+-       ldy     $c0d1
+        bpl     -
+        eor+2   preshift-$96, y ;force oversized addressing mode
+        ldy+2   bit2tbl-$ac, x  ;force oversized addressing mode
+        eor     grouped, y      ;last 84 nibbles use group bits 4-5
+adrpatch6
+        sta     $d100, x
+        inx
+        bne     -
+        and     #$fc
+slotpatch5
+-       ldy     $c0d1
+        bpl     -
+        eor+2   preshift-$96, y ;force oversized addressing mode
+        bne     branch_read     ;branch if checksum failure
+sector
+        ldy     #0              ;constant used in table init, self-mod later
+        stx     addrtbl, y      ;zero corresponding address
+        inc     <count          ;adjust remaining count (faster than looping over array)
+        bne     branch_read     ;read all requested sectors in one track
+        rts
+
+seek            ;requires carry set on entry
+        inc     <(curtrk+1)     ;phase on
+curtrk
+        ldy     #$3f            ;constant used in table init, self-mod later
+        lda     #4
+        jsr     delay
+        dey                     ;phase off
+        adc     #$41            ;clear carry while setting #$42
+delay
+        sta     <(setdelay+1)
+        tya
+        and     #3
+        rol
+        tax
+slotpatch6
+        lda     $c0d1, x
+setdelay
+        lda     #$d1
+        jmp     wait
+
+driveoff
+        ;place post-read routine here
+
+slotpatch8
+        lda     $c0d1
+
+readnib
+slotpatch7
+-       lda     $c0d1
+        bpl     -
+        rts
+
+!if multi_regn=1 {
+set_address
+        pla
+        sta     rdpage+1
+        rts
+}
+
+addrtbl
+        !word   driveoff-1, ROM_IN0-1, ROM_PR0-1, ROM_NORMAL-1, ROM_TEXT-1
+stackend
+patchtbl
+        !byte   <(slotpatch1+1), <(slotpatch2+1), <(slotpatch3+1), <(slotpatch4+1), <(slotpatch5+1), <(slotpatch7+1)
+indextbl        ;the 0 also terminates the patchtbl list!
+        !byte   0, 2, 1, 3
+
+!if *!=WaitForKey {
+  !serious "WaitForKey starts at ",*, ", must adjust constants.a"
+}
+         bit   CLEARKBD
+-        inc   RNDSEED
+         bne   +
+         inc   RNDSEED+1
++        lda   KBD
+         bpl   -
+         rts
+!if *>$100 {
+  !serious "0boot is too large, ends at ", *
+}
+}

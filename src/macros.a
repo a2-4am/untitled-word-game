@@ -1,0 +1,40 @@
+;license:MIT
+;(c) 2020-2022 by 4am
+;
+; common assembler macros (6502 compatible)
+;
+
+; load the address of .ptr into A (low) and Y (high)
+; preserves X
+!macro   LDADDR .ptr {
+         lda   #<.ptr
+         ldy   #>.ptr
+}
+
+; store a 16-bit value from A (low) and Y (high)
+; preserves X
+!macro   ST16 .ptr {
+         sta   .ptr
+         sty   .ptr+1
+}
+
+; use BIT to swallow the following 1-byte opcode
+; preserves A,X,Y
+!macro   HIDE_NEXT_BYTE {
+         !byte $24
+}
+
+; use BIT to swallow the following 2-byte opcode
+; preserves A,X,Y
+!macro   HIDE_NEXT_2_BYTES {
+         !byte $2C
+}
+
+; wait for keypress (for debugging)
+; preserves A,X,Y
+!macro   DEBUGWAIT {
+         bit   $c010
+-        bit   $c000
+         bpl   -
+         bit   $c010
+}

@@ -1,0 +1,98 @@
+;license:MIT
+;(c) 2020-2022 by 4am
+;
+
+;------------------------------------------------------------------------------
+; YE OLDE GRAND UNIFIED MEMORY MAP
+;
+; MAIN MEMORY
+
+; 0400..07F7 - text page
+
+; 4000+      - not available (!)
+;------------------------------------------------------------------------------
+
+; soft switches
+KBD =          $C000      ; last key pressed (if any)
+CLR80VID =     $C00C      ; 40 columns (also used to get out of DHGR mode)
+PRIMARYCHARSET= $C00E     ; no mousetext for you
+CLEARKBD =     $C010      ; clear last key pressed
+
+; ROM routines and addresses
+TEXTTOP      = $22        ; byte
+TEXTBOTTOM   = $23        ; byte
+HTAB         = $24        ; byte
+VTAB         = $25        ; byte
+RNDSEED      = $4E        ; word
+ROM_TEXT =     $FB2F
+ROM_TEXT_RECALC = $FC22
+ROM_HOME =     $FC58
+ROM_WAIT =     $FCA8
+ROM_PRINT =    $FDF0
+ROM_NORMAL =   $FE84      ; NORMAL text (instead of INVERSE or FLASH)
+ROM_IN0 =      $FE89      ; SETKBD
+ROM_PR0 =      $FE93      ; SETVID
+
+; other constants
+CR =           $8D        ; carriage return
+QQ =           $A2        ; quotation mark
+
+; application-specific addresses
+ptr          = $00        ; word
+counter      = $02        ; byte
+WaitForKey   = $00EF
+
+;nvalue=512     ;value of n for nth testing
+tempstor=$200 ;requires 26*tblsize(4) bytes
+cmpword=$7000  ;holds 5-letter word for exists testing
+
+table_size=5 ;from bin file
+word_size=5 ;from bin file
+num_tables=6 ;from bin file
+
+nstore=$ec ;16-bit
+locstore=$ea ;16-bit
+state=$e6 ;4 bytes struct
+offset=$e6
+left=$e8
+fetched=$e9
+statesize=4
+
+value=$e4 ;16-bit
+num_items=$e3
+index=$e2
+tblptr=$e0 ;16-bit
+buf=$de ;16-bit
+tbl0ptr=$dc ;16-bit
+tbl5ptr=$da ;16-bit
+depth=$d9
+num_children=$d8
+preflen=$d7
+prefix=$d2 ;word_size bytes
+theword=$cd ;word_size bytes
+match=$cc
+bits=$cb
+
+;structure members
+offset_off=0 ;16-bit
+left_off=2
+fetched_off=3
+count_off=4 ;16-bit
+locsize=6
+
+value_off=0
+bits_off=1
+key_off=2 ;16-bit
+tblsize=4
+
+;;        lda    #<nvalue
+;;        sta    nstore
+;;        lda    #>nvalue
+;;        sta    nstore+1
+;;        jsr    nth
+
+;;        jsr    exists
+;;        beq    found
+;;        inc    cmpword+2 ;test breakage
+;;        jsr    exists
+;;        beq    found

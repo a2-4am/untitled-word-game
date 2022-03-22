@@ -1,0 +1,645 @@
+;license:MIT
+;(c) 2022 by qkumba
+
+!cpu 6502
+
+vettbl0
+        !word   vet+$005;offset
+        !byte   0       ;bits left
+        !byte   $00     ;bits fetched
+vettbl1
+        !word   vet+$03d;offset
+        !byte   0       ;bits left
+        !byte   $00     ;bits fetched
+vettbl2
+        !word   vet+$077;offset
+        !byte   2       ;bits left
+        !byte   $c0     ;bits fetched
+vettbl3
+        !word   vet+$0b3;offset
+        !byte   2       ;bits left
+        !byte   $c0     ;bits fetched
+vettbl4
+        !word   vet+$0ed;offset
+        !byte   5       ;bits left
+        !byte   $b8     ;bits fetched
+vettbl5
+        !word   vet+$124;offset
+        !byte   2       ;bits left
+        !byte   $80     ;bits fetched
+
+alltbl0
+        !word   all+$005;offset
+        !byte   0       ;bits left
+        !byte   $00     ;bits fetched
+alltbl1
+        !word   all+$040;offset
+        !byte   5       ;bits left
+        !byte   $d0     ;bits fetched
+alltbl2
+        !word   all+$07b;offset
+        !byte   0       ;bits left
+        !byte   $00     ;bits fetched
+alltbl3
+        !word   all+$0b6;offset
+        !byte   1       ;bits left
+        !byte   $80     ;bits fetched
+alltbl4
+        !word   all+$0f2;offset
+        !byte   0       ;bits left
+        !byte   $00     ;bits fetched
+alltbl5
+        !word   all+$12e;offset
+        !byte   2       ;bits left
+        !byte   $c0     ;bits fetched
+
+!if >alltbl0 != >vettbl0 {
+  !error "tables span a page, ", alltbl0, " ", vettbl0
+}
+!if >* != >vettbl0 {
+  !error "tables span a page, ", vettbl0, " ", *
+}
+
+;------------------------------------------------------------------------------
+;nth - finds and returns nth word from vetted table
+;requires nstore to be set to value of n
+;returns found word at address "theword"($dd)
+;------------------------------------------------------------------------------
+nth
+        lda    #<vetlocs
+        sta    locstore
+        lda    #>vetlocs
+        sta    locstore + 1
+.search
+        ldy    #count_off
+        sec
+        lda    nstore
+        sbc    (locstore), y
+        tax
+        iny
+        lda    nstore + 1
+        sbc    (locstore), y
+        bcc    .foundbase
+        stx    nstore
+        sta    nstore + 1
+        lda    locstore
+        adc    #locsize - 1
+        sta    locstore
+        bcc    .search
+        inc    locstore + 1
+        bne    .search  ;always
+
+.foundbase
+        jsr    copystate
+        lda    #0
+
+tryvet
+        sta    match
+        lda    #<vettbl0
+        ldx    #>vettbl0
+        bne    settblbase
+
+;------------------------------------------------------------------------------
+;exists - check for existence in either list of word at address "cmpword"
+;returns Z=1 if found, Z=0 if not
+;------------------------------------------------------------------------------
+exists
+        lda    cmpword
+        sta    nstore + 1
+        and    #$1f
+        asl             ;*2
+        sta    nstore
+        asl             ;*4
+        adc    nstore   ;*6 (=*locsize)
+        adc    #<(vetlocs - locsize)
+        sta    locstore
+        lda    #>(vetlocs - locsize)
+        adc    #0
+        sta    locstore + 1
+        jsr    copystate
+        lda    #breakend - breakbeg
+        jsr    tryvet
+        jsr    checkres
+        beq    checkret
+        clc
+        lda    locstore
+        adc    #<(alllocs - vetlocs)
+        sta    locstore
+        lda    locstore + 1
+        adc    #>(alllocs - vetlocs)
+        sta    locstore + 1
+        jsr    copystate
+        lda    #<alltbl0
+        ldx    #>alltbl0
+        jsr    settblbase
+checkres
+        lda    nstore
+        ora    nstore + 1
+checkret
+        rts
+
+settblbase
+        sta    tbl0ptr
+        stx    tbl0ptr + 1
+        clc
+        adc    #(num_tables - 1) * tblsize
+        sta    tbl5ptr
+;;      txa
+;;      adc    #0
+        stx    tbl5ptr + 1
+        inc    nstore
+        bne    read_payload
+        inc    nstore + 1
+
+read_payload
+        lda    #0
+        sta    depth
+        sta    preflen
+
+read_payload_r
+        jsr    checkres
+        beq    checkret
+        lda    depth
+        cmp    #num_tables - 2
+        bcs    .gotchildren
+        ldx    tbl5ptr
+        ldy    tbl5ptr + 1
+        jsr    read_varint
+        sta    num_children
+
+.gotchildren
+        lda    depth
+        asl
+        asl             ;*tblsize
+        adc    tbl0ptr
+        tax
+        ldy    tbl0ptr + 1
+;;        bcc    +
+;;        iny
++       jsr    read_varint
+        ora    #'A'
+;;        tax
+;;        lda    alphabet, x
+        ldx    preflen
+        sta    prefix, x
+        lda    depth
+        cmp    #num_tables - 2
+        bne    .notword
+        lda    match
+        sta    .copyop + 1
+        ldx    #word_size
+.copyprefix
+        lda    prefix - 1, x
+        sta    theword - 1, x
+        eor    cmpword - 1, x
+.copyop
+        bne    breakbeg ;SMC
+breakbeg
+        dex
+        bne    .copyprefix
+        tay
+        lda    match
+        bne    zeroind
+breakend
+        ldy    nstore + 1
+        ldx    nstore
+        bne    +
+        dey
++       dex
+zeroind stx    nstore
+        sty    nstore + 1
+        rts
+
+.notword
+        pha
+        lda    num_children
+        pha
+        lda    preflen
+        pha
+        inc    preflen
+        inc    depth
+        jsr    read_payload_r
+        pla
+        sta    preflen
+        pla
+        sta    num_children
+        pla
+        sta    depth
+        dec    num_children
+        bne    .notword
+        rts
+
+;;alphabet !text "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+read_int
+        ldy    #0
+        sty    value
+        sty    value + 1
+
+.shift
+        lda    left
+        bne    .updval
+        lda    (offset), y
+        inc    offset
+        bne    +
+        inc    offset + 1
++       sta    fetched
+        lda    #8
+        sta    left
+
+.updval
+        asl    fetched
+        rol    value
+        rol    value + 1
+        dec    left
+        dex
+        bne    .shift
+        rts
+
+read_varint
+        stx    locstore
+        sty    locstore + 1
+        jsr    savestate
+        ldx    #table_size
+        jsr    read_int
+        lda    value
+        sta    num_items
+        sta    index
+        jsr    settblptr
+
+.readtbl
+        ldx    #word_size
+        jsr    readcopy
+        ldx    #8
+        jsr    readcopy
+        tax
+        jsr    read_int
+        jsr    copytblw
+        dec    index
+        bne    .readtbl
+        sty    buf
+        sty    buf + 1
+        sty    bits
+        jsr    reststate
+--      ldx    #1
+        jsr    read_int
+        lsr    value
+        rol    buf
+        rol    buf + 1
+        inc    bits
+        jsr    settblptr
+-       ldy    #key_off + 1
+        lda    buf + 1
+        cmp    (tblptr), y
+        bne    +
+        dey             ;key_off
+        lda    buf
+        cmp    (tblptr), y
+        bne    +
+        dey             ;bits_off
+        lda    bits
+        cmp    (tblptr), y
+        bne    +
+        dey             ;value_off
+        lda    (tblptr), y
+        rts
++       clc
+        lda    tblptr
+        adc    #tblsize
+        sta    tblptr
+        bcc    +
+        inc    tblptr + 1
++       inc    index
+        lda    index
+        eor    num_items
+        bne    -
+        sta    index
+        beq    --       ;always
+
+savestate
+        pla
+        sta    .savejmp + 4
+        pla
+        sta    .savejmp + 1
+        ldy    #statesize - 1
+.pushstate
+        lda    state, y
+        pha
+        dey
+        bpl    .pushstate
+.savejmp
+        lda    #0       ;SMC
+        pha
+        lda    #0       ;SMC
+        pha
+
+copystate
+        ldy    #statesize - 1
+.copystate
+        lda    (locstore), y
+        sta    state, y
+        dey
+        bpl    .copystate
+        rts
+
+reststate
+        pla
+        sta    .restjmp + 4
+        pla
+        sta    .restjmp + 1
+        ldx    #-statesize
+.popstate
+        pla
+        sta    state + statesize, x
+        inx
+        bne    .popstate
+.restjmp
+        lda    #0       ;SMC
+        pha
+        lda    #0       ;SMC
+        pha
+        rts
+
+settblptr
+        lda    #<tempstor
+        sta    tblptr
+        lda    #>tempstor
+        sta    tblptr + 1
+        rts
+
+readcopy
+        jsr    read_int
+-       sec
+copytblw
+        lda    value, x
+        sta    (tblptr), y
+        inc    tblptr
+        bne    +
+        inc    tblptr + 1
++       inx
+        bcc    -
+-       rts
+
+vetlocs
+;alpha: 00
+        !word   vet+$152;offset
+        !byte   5       ;bits left
+        !byte   $20     ;bits fetched
+        !word   088     ;count of entries
+;alpha: 01
+        !word   vet+$1f1;offset
+        !byte   7       ;bits left
+        !byte   $30     ;bits fetched
+        !word   176     ;count of entries
+;alpha: 02
+        !word   vet+$2de;offset
+        !byte   3       ;bits left
+        !byte   $20     ;bits fetched
+        !word   193     ;count of entries
+;alpha: 03
+        !word   vet+$3d5;offset
+        !byte   5       ;bits left
+        !byte   $30     ;bits fetched
+        !word   103     ;count of entries
+;alpha: 04
+        !word   vet+$471;offset
+        !byte   5       ;bits left
+        !byte   $20     ;bits fetched
+        !word   035     ;count of entries
+;alpha: 05
+        !word   vet+$4b6;offset
+        !byte   2       ;bits left
+        !byte   $00     ;bits fetched
+        !word   144     ;count of entries
+;alpha: 06
+        !word   vet+$579;offset
+        !byte   6       ;bits left
+        !byte   $20     ;bits fetched
+        !word   095     ;count of entries
+;alpha: 07
+        !word   vet+$5ff;offset
+        !byte   4       ;bits left
+        !byte   $30     ;bits fetched
+        !word   084     ;count of entries
+;alpha: 08
+        !word   vet+$673;offset
+        !byte   2       ;bits left
+        !byte   $00     ;bits fetched
+        !word   026     ;count of entries
+;alpha: 09
+        !word   vet+$6a6;offset
+        !byte   5       ;bits left
+        !byte   $38     ;bits fetched
+        !word   012     ;count of entries
+;alpha: 10
+        !word   vet+$6b8;offset
+        !byte   0       ;bits left
+        !byte   $00     ;bits fetched
+        !word   013     ;count of entries
+;alpha: 11
+        !word   vet+$6cd;offset
+        !byte   2       ;bits left
+        !byte   $00     ;bits fetched
+        !word   094     ;count of entries
+;alpha: 12
+        !word   vet+$752;offset
+        !byte   3       ;bits left
+        !byte   $20     ;bits fetched
+        !word   113     ;count of entries
+;alpha: 13
+        !word   vet+$7f2;offset
+        !byte   6       ;bits left
+        !byte   $34     ;bits fetched
+        !word   034     ;count of entries
+;alpha: 14
+        !word   vet+$82d;offset
+        !byte   4       ;bits left
+        !byte   $20     ;bits fetched
+        !word   033     ;count of entries
+;alpha: 15
+        !word   vet+$86d;offset
+        !byte   2       ;bits left
+        !byte   $00     ;bits fetched
+        !word   145     ;count of entries
+;alpha: 16
+        !word   vet+$938;offset
+        !byte   5       ;bits left
+        !byte   $f0     ;bits fetched
+        !word   018     ;count of entries
+;alpha: 17
+        !word   vet+$950;offset
+        !byte   2       ;bits left
+        !byte   $00     ;bits fetched
+        !word   098     ;count of entries
+;alpha: 18
+        !word   vet+$9de;offset
+        !byte   3       ;bits left
+        !byte   $20     ;bits fetched
+        !word   235     ;count of entries
+;alpha: 19
+        !word   vet+$b2c;offset
+        !byte   0       ;bits left
+        !byte   $00     ;bits fetched
+        !word   131     ;count of entries
+;alpha: 20
+        !word   vet+$be6;offset
+        !byte   3       ;bits left
+        !byte   $20     ;bits fetched
+        !word   021     ;count of entries
+;alpha: 21
+        !word   vet+$c0c;offset
+        !byte   2       ;bits left
+        !byte   $00     ;bits fetched
+        !word   046     ;count of entries
+;alpha: 22
+        !word   vet+$c5a;offset
+        !byte   3       ;bits left
+        !byte   $20     ;bits fetched
+        !word   093     ;count of entries
+;alpha: 23
+        !word   vet+$cda;offset
+        !byte   3       ;bits left
+        !byte   $20     ;bits fetched
+        !word   013     ;count of entries
+;alpha: 24
+        !word   vet+$cf1;offset
+        !byte   1       ;bits left
+        !byte   $00     ;bits fetched
+        !word   005     ;count of entries
+
+alllocs
+;alpha: 00
+        !word   all+$174;offset
+        !byte   3       ;bits left
+        !byte   $20     ;bits fetched
+        !word   446     ;count of entries
+;alpha: 01
+        !word   all+$3f3;offset
+        !byte   0       ;bits left
+        !byte   $00     ;bits fetched
+        !word   471     ;count of entries
+;alpha: 02
+        !word   all+$636;offset
+        !byte   4       ;bits left
+        !byte   $20     ;bits fetched
+        !word   515     ;count of entries
+;alpha: 03
+        !word   all+$8ad;offset
+        !byte   6       ;bits left
+        !byte   $34     ;bits fetched
+        !word   381     ;count of entries
+;alpha: 04
+        !word   all+$a8d;offset
+        !byte   4       ;bits left
+        !byte   $30     ;bits fetched
+        !word   175     ;count of entries
+;alpha: 05
+        !word   all+$ba3;offset
+        !byte   5       ;bits left
+        !byte   $20     ;bits fetched
+        !word   303     ;count of entries
+;alpha: 06
+        !word   all+$d33;offset
+        !byte   7       ;bits left
+        !byte   $22     ;bits fetched
+        !word   357     ;count of entries
+;alpha: 07
+        !word   all+$ef5;offset
+        !byte   2       ;bits left
+        !byte   $00     ;bits fetched
+        !word   276     ;count of entries
+;alpha: 08
+        !word   all+$105c;offset
+        !byte   3       ;bits left
+        !byte   $20     ;bits fetched
+        !word   099     ;count of entries
+;alpha: 09
+        !word   all+$10fa;offset
+        !byte   0       ;bits left
+        !byte   $00     ;bits fetched
+        !word   133     ;count of entries
+;alpha: 10
+        !word   all+$11b3;offset
+        !byte   4       ;bits left
+        !byte   $30     ;bits fetched
+        !word   225     ;count of entries
+;alpha: 11
+        !word   all+$1300;offset
+        !byte   0       ;bits left
+        !byte   $00     ;bits fetched
+        !word   336     ;count of entries
+;alpha: 12
+        !word   all+$149a;offset
+        !byte   3       ;bits left
+        !byte   $20     ;bits fetched
+        !word   371     ;count of entries
+;alpha: 13
+        !word   all+$165d;offset
+        !byte   2       ;bits left
+        !byte   $00     ;bits fetched
+        !word   186     ;count of entries
+;alpha: 14
+        !word   all+$1760;offset
+        !byte   4       ;bits left
+        !byte   $30     ;bits fetched
+        !word   160     ;count of entries
+;alpha: 15
+        !word   all+$186c;offset
+        !byte   1       ;bits left
+        !byte   $00     ;bits fetched
+        !word   471     ;count of entries
+;alpha: 16
+        !word   all+$1aa4;offset
+        !byte   1       ;bits left
+        !byte   $00     ;bits fetched
+        !word   041     ;count of entries
+;alpha: 17
+        !word   all+$1ae2;offset
+        !byte   5       ;bits left
+        !byte   $30     ;bits fetched
+        !word   355     ;count of entries
+;alpha: 18
+        !word   all+$1c9d;offset
+        !byte   7       ;bits left
+        !byte   $26     ;bits fetched
+        !word   877     ;count of entries
+;alpha: 19
+        !word   all+$20b2;offset
+        !byte   1       ;bits left
+        !byte   $00     ;bits fetched
+        !word   471     ;count of entries
+;alpha: 20
+        !word   all+$22fa;offset
+        !byte   4       ;bits left
+        !byte   $20     ;bits fetched
+        !word   111     ;count of entries
+;alpha: 21
+        !word   all+$23a3;offset
+        !byte   1       ;bits left
+        !byte   $00     ;bits fetched
+        !word   132     ;count of entries
+;alpha: 22
+        !word   all+$245a;offset
+        !byte   0       ;bits left
+        !byte   $00     ;bits fetched
+        !word   218     ;count of entries
+;alpha: 23
+        !word   all+$2572;offset
+        !byte   1       ;bits left
+        !byte   $00     ;bits fetched
+        !word   013     ;count of entries
+;alpha: 24
+        !word   all+$2589;offset
+        !byte   7       ;bits left
+        !byte   $36     ;bits fetched
+        !word   099     ;count of entries
+;alpha: 25
+        !word   all+$2618;offset
+        !byte   0       ;bits left
+        !byte   $00     ;bits fetched
+        !word   060     ;count of entries
+
+vet
+!bin "res/vet.bin"
+all
+!bin "res/all.bin"

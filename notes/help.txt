@@ -1,0 +1,24 @@
+           UNTITLED WORD GAME
+________________________________________
+
+
+GUESS THE WORD IN SIX TRIES. EACH GUESS
+MUST BE A VALID FIVE-LETTER WORD.
+
+PRESS RETURN TO SUBMIT YOUR GUESS, THEN
+LETTERS WILL LIGHT UP TO SHOW HOW CLOSE
+YOUR GUESS WAS.
+
+
+ [ C L * W N ]   "O" IS IN THE WORD AND
+                 IN THE RIGHT SPOT
+
+ [ * H U M P ]   "T" IS IN THE WORD BUT
+                 IN THE WRONG SPOT
+
+ [ B L A D E ]   NONE OF THESE LETTERS
+                 APPEAR IN THE WORD
+
+________________________________________
+
+       V1.0 (C) 2022 4AM & QKUMBA
