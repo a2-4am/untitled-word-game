@@ -326,13 +326,12 @@ NewKey
          beq   DeleteLetter
          cmp   #$9B                  ; Esc
          beq   NewGame
-;         cmp   #$E1
-;         bcc   +
-;         cmp   #$FB
-;         bcs   NewKey
-;         and   #$DF                  ; convert lowercase to uppercase
-;+
-         cmp   #$C1
+         cmp   #$E1
+         bcc   +
+         cmp   #$FB
+         bcs   NewKey
+         and   #$DF                  ; convert lowercase to uppercase
++        cmp   #$C1
          bcc   NewKey
          cmp   #$DB
          bcs   NewKey
