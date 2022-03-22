@@ -131,8 +131,9 @@ exists
         ldy    #breakend - breakbeg
         jsr    tryvet
         jsr    checkres
-        beq    checkret
+        cmp    #1
         pla
+        bcc    checkret
         adc    #<((alllocs - locsize) - 1)
         sta    locstore
         lda    #>((alllocs - locsize) - 1)
