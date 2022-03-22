@@ -71,7 +71,7 @@ kAlphabetLetterIndex                 ; 0-based index into sAlphabet where each l
          !byte 59                    ; M
          !byte 57                    ; N
          !byte 19                    ; O
-         !byte 20                    ; P
+         !byte 21                    ; P
          !byte  3                    ; Q
          !byte  9                    ; R
          !byte 28                    ; S
@@ -94,22 +94,26 @@ PER_GAME_GLOBALS
 !pseudopc $50 {
 PER_GAME_GLOBALS_ZP
 
-gAlphabet
+sProgressIndicators                  ; length 4
+         !byte $AF,$AD,$DC,$A1
+gAlphabet                            ; 0-terminated
          !byte $FF,10
          !text " Q W E R T Y U I O P",CR
          !byte $FF,11
          !text " A S D F G H J K L",CR
          !byte $FF,12
          !text " Z X C V B N M",0
-gActiveVTAB
+gActiveVTAB                          ; byte
          !byte 4
 sLose
          !byte $FF,14
-         !text " THE WORD IS",$FF,70," " ; no 0-termination because we want to print the solution after it
+         !text " THE WORD IS"
+         !byte $FF,70
+         !text " "                   ; not 0-terminated because we want to print the solution after it
 gSolution
          !text "S T O R Y"
 SOLUTION_LEN=*-gSolution
-         !text " ",0                 ; so gSolution can be directly printable if you lose
+         !text " ",0                 ; 0-terminated so gSolution can be directly printable if you lose
 }
 PER_GAME_GLOBALS_LEN=*-PER_GAME_GLOBALS
 
@@ -201,10 +205,19 @@ BadGuess
 -        jmp   NewKey
 SubmitGuess
          lda   <gActiveLetterIndex
-         cmp   #10
+         cmp   #10                   ; refuse guess if fewer than 5 letters
          bcc   -
-         jsr   IsKnownWord
-         bcs   BadGuess
+         ldx   #8                    ; skip expensive exists() call if guess is correct
+-        lda   <gActiveRow+5, x
+         cmp   <gSolution, x
+         bne   @checkExists
+         dex
+         bpl   -
+         bmi   @skipExists
+@checkExists
+         jsr   exists
+         bne   BadGuess
+@skipExists
          ldy   #8                    ; first, update alphabet to clear letters we've used
 -        lda   <gActiveRow+5, y
          and   #$1F
@@ -285,13 +298,6 @@ NewGame
          dex
          bne   -
          jsr   ROM_HOME
-                                     ; RNDSEED is primed with randomness
-                                     ; store in <gSolution+0/+2/+4/+6/+8
-         lda   RNDSEED
-         sta   nstore
-         lda   RNDSEED+1
-         and   #7
-         sta   nstore+1
          jsr   nth
          jsr   PrintBlankRows
 NewGuess
@@ -354,13 +360,6 @@ DeleteLetter
 +        dex
          dex
          bpl   UpdateCursor          ; always branches
-         ;-----
-IsKnownWord                          ; TODO
-; out:   C=0 if word is known
-;        C=1 otherwise
-         lda   <gActiveRow+5
-         cmp   #"X"
-         rts
          ;-----
 
          !src  "src/lookup.a"

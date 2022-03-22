@@ -61,15 +61,21 @@ alltbl5
 }
 
 ;------------------------------------------------------------------------------
-;nth - finds and returns nth word from vetted table
-;requires nstore to be set to value of n
-;returns found word at address "gSolution"
+; nth
+;
+; finds and returns nth word from vetted table
+;
+; in:    nstore (2 bytes) set to value of n
+;          can technically be any 16-bit value, will be ANDed to 11 bits (0..2047)
+; out:   gSolution (9 bytes) contains space-separated word
 ;------------------------------------------------------------------------------
 nth
         lda    #<vetlocs
         sta    locstore
         lda    #>vetlocs
         sta    locstore + 1
+        lda    #$95                  ; STA zp, X
+        sta    maybestore
 .search
         ldy    #count_off
         sec
@@ -78,6 +84,7 @@ nth
         tax
         iny
         lda    nstore + 1
+        and    #7                    ; max 2048 words in vetted list
         sbc    (locstore), y
         bcc    .foundbase
         stx    nstore
@@ -100,11 +107,19 @@ tryvet
         bne    settblbase
 
 ;------------------------------------------------------------------------------
-;exists - check for existence in either list of word at address "cmpword"
-;returns Z=1 if found, Z=0 if not
+; exists
+;
+; check for existence of word in either list
+;
+; in:    cmpword (9 bytes) contains space-separated word
+; out:   Z=1 if word was found in either list
+;        Z=0 otherwise
 ;------------------------------------------------------------------------------
+cmpword=<gActiveRow+5
 exists
-        lda    cmpword
+        lda    #$24       ; BIT zp
+        sta    maybestore
+        lda    <cmpword
         sta    nstore + 1
         and    #$1f
         asl             ;*2
@@ -159,7 +174,16 @@ read_payload
 read_payload_r
         jsr    checkres
         beq    checkret
-        lda    depth
+        inc    <gProgressIndicatorIndex
+        lda    <gProgressIndicatorIndex
+        and    #7
+        lsr
+        bcc    +
+        tay
+        lda    <sProgressIndicators, y
+        ldy    #11
+        sta    ($28), y
++       lda    depth
         cmp    #num_tables - 2
         bcs    .gotchildren
         ldx    tbl5ptr
@@ -190,8 +214,9 @@ read_payload_r
         ldx    #word_size * 2
 .copyprefix
         lda    prefix - 2, x
-        sta    gSolution - 2, x
-        eor    cmpword - 2, x
+maybestore
+        sta    <gSolution - 2, x     ; opcode SMC
+        eor    <cmpword - 2, x
 .copyop
         bne    breakbeg ;SMC
 breakbeg

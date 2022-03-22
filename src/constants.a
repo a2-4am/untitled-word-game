@@ -40,17 +40,16 @@ QQ =           $A2        ; quotation mark
 ; application-specific addresses
 ptr          = $00        ; word
 counter      = $02        ; byte
+gProgressIndicatorIndex = $03 ; byte
 WaitForKey   = $00EF
 
-;nvalue=512     ;value of n for nth testing
 tempstor=$200 ;requires 26*tblsize(4) bytes
-cmpword=$7000  ;holds 5-letter word for exists testing
 
 table_size=5 ;from bin file
 word_size=5 ;from bin file
 num_tables=6 ;from bin file
 
-nstore=$ec ;16-bit
+nstore=RNDSEED;$ec ;16-bit
 locstore=$ea ;16-bit
 state=$e6 ;4 bytes struct
 offset=$e6
@@ -83,15 +82,3 @@ value_off=0
 bits_off=1
 key_off=2 ;16-bit
 tblsize=4
-
-;;        lda    #<nvalue
-;;        sta    nstore
-;;        lda    #>nvalue
-;;        sta    nstore+1
-;;        jsr    nth
-
-;;        jsr    exists
-;;        beq    found
-;;        inc    cmpword+2 ;test breakage
-;;        jsr    exists
-;;        beq    found
