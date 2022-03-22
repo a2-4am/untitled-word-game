@@ -4,58 +4,55 @@
 !cpu 6502
 
 vettbl0
-        !word   vet+$005;offset
-        !byte   0       ;bits left
-        !byte   $00     ;bits fetched
+        !word   vet+$005             ; offset
+        !byte   $00                  ; bits left
+        !byte   $00                  ; bits fetched
 vettbl1
-        !word   vet+$03d;offset
-        !byte   0       ;bits left
-        !byte   $00     ;bits fetched
+        !word   vet+$03d             ; offset
+        !byte   $00                  ; bits left
+        !byte   $00                  ; bits fetched
 vettbl2
-        !word   vet+$077;offset
-        !byte   2       ;bits left
-        !byte   $c0     ;bits fetched
+        !word   vet+$077             ; offset
+        !byte   $40                  ; bits left
+        !byte   $c0                  ; bits fetched
 vettbl3
-        !word   vet+$0b3;offset
-        !byte   2       ;bits left
-        !byte   $c0     ;bits fetched
+        !word   vet+$0b3             ; offset
+        !byte   $40                  ; bits left
+        !byte   $c0                  ; bits fetched
 vettbl4
-        !word   vet+$0ed;offset
-        !byte   5       ;bits left
-        !byte   $b8     ;bits fetched
+        !word   vet+$0ed             ; offset
+        !byte   $08                  ; bits left
+        !byte   $b8                  ; bits fetched
 vettbl5
-        !word   vet+$124;offset
-        !byte   2       ;bits left
-        !byte   $80     ;bits fetched
+        !word   vet+$124             ; offset
+        !byte   $40                  ; bits left
+        !byte   $80                  ; bits fetched
 
 alltbl0
-        !word   all+$005;offset
-        !byte   0       ;bits left
-        !byte   $00     ;bits fetched
+        !word   all+$005             ; offset
+        !byte   $00                  ; bits left
+        !byte   $00                  ; bits fetched
 alltbl1
-        !word   all+$040;offset
-        !byte   5       ;bits left
-        !byte   $d0     ;bits fetched
+        !word   all+$040             ; offset
+        !byte   $08                  ; bits left
+        !byte   $d0                  ; bits fetched
 alltbl2
-        !word   all+$07b;offset
-        !byte   0       ;bits left
-        !byte   $00     ;bits fetched
+        !word   all+$07b             ; offset
+        !byte   $00                  ; bits left
+        !byte   $00                  ; bits fetched
 alltbl3
-        !word   all+$0b6;offset
-        !byte   1       ;bits left
-        !byte   $80     ;bits fetched
+        !word   all+$0b6             ; offset
+        !byte   $80                  ; bits left
+        !byte   $80                  ; bits fetched
 alltbl4
-        !word   all+$0f2;offset
-        !byte   0       ;bits left
-        !byte   $00     ;bits fetched
+        !word   all+$0f2             ; offset
+        !byte   $00                  ; bits left
+        !byte   $00                  ; bits fetched
 alltbl5
-        !word   all+$12e;offset
-        !byte   2       ;bits left
-        !byte   $c0     ;bits fetched
+        !word   all+$12e             ; offset
+        !byte   $40                  ; bits left
+        !byte   $c0                  ; bits fetched
 
-!if >alltbl0 != >vettbl0 {
-  !error "tables span a page, ", alltbl0, " ", vettbl0
-}
 !if >* != >vettbl0 {
   !error "tables span a page, ", vettbl0, " ", *
 }
@@ -74,8 +71,6 @@ nth
         sta    locstore
         lda    #>vetlocs
         sta    locstore + 1
-        lda    #$95                  ; STA zp, X
-        sta    maybestore
 .search
         ldy    #count_off
         sec
@@ -89,22 +84,23 @@ nth
         bcc    .foundbase
         stx    nstore
         sta    nstore + 1
-        tya             ;=#locsize - 1
+        tya                          ; = #locsize - 1
         adc    locstore
         sta    locstore
         bcc    .search
         inc    locstore + 1
-        bne    .search  ;always
+        bne    .search               ; always
 
 .foundbase
         jsr    copystate
-        lda    #0
+        ldx    #$95                  ; STA ,X
+        iny                          ; 0
 
 tryvet
-        sta    match
+        stx    .copyop
+        sty    .branchop + 1
         lda    #<vettbl0
-        ldx    #>vettbl0
-        bne    settblbase
+        bcc    settblbase            ; always
 
 ;------------------------------------------------------------------------------
 ; exists
@@ -117,35 +113,33 @@ tryvet
 ;------------------------------------------------------------------------------
 cmpword=<gActiveRow+5
 exists
-        lda    #$24       ; BIT zp
-        sta    maybestore
-        lda    <cmpword
+        lda    cmpword
         sta    nstore + 1
         and    #$1f
-        asl             ;*2
+        asl                          ; *2
         sta    nstore
-        asl             ;*4
-        adc    nstore   ;*6 (=*locsize)
+        asl                          ; *4
+        adc    nstore                ; *6 (= *locsize)
+        pha
         adc    #<(vetlocs - locsize)
         sta    locstore
         lda    #>(vetlocs - locsize)
         adc    #0
         sta    locstore + 1
         jsr    copystate
-        lda    #breakend - breakbeg
+        ldx    #$C9                  ; CMP
+        ldy    #breakend - breakbeg
         jsr    tryvet
         jsr    checkres
         beq    checkret
-        clc
-        lda    locstore
-        adc    #<(alllocs - vetlocs)
+        pla
+        adc    #<((alllocs - locsize) - 1)
         sta    locstore
-        lda    locstore + 1
-        adc    #>(alllocs - vetlocs)
+        lda    #>((alllocs - locsize) - 1)
+        adc    #0
         sta    locstore + 1
         jsr    copystate
         lda    #<alltbl0
-        ldx    #>alltbl0
         jsr    settblbase
 checkres
         lda    nstore
@@ -155,8 +149,8 @@ checkret
 
 settblbase
         sta    tbl0ptr
+        ldx    #>vettbl0
         stx    tbl0ptr + 1
-        clc
         adc    #(num_tables - 1) * tblsize
         sta    tbl5ptr
 ;;      txa
@@ -179,8 +173,8 @@ read_payload_r
         and    #7
         lsr
         bcc    +
-        tay
-        lda    <sProgressIndicators, y
+        tax
+        lda    <sProgressIndicators, x
         ldy    #11
         sta    ($28), y
 +       lda    depth
@@ -194,7 +188,7 @@ read_payload_r
 .gotchildren
         lda    depth
         asl
-        asl             ;*tblsize
+        asl                          ; *tblsize
         adc    tbl0ptr
         tax
         ldy    tbl0ptr + 1
@@ -209,22 +203,20 @@ read_payload_r
         lda    depth
         cmp    #num_tables - 2
         bne    .notword
-        lda    match
-        sta    .copyop + 1
         ldx    #word_size * 2
 .copyprefix
         lda    prefix - 2, x
-maybestore
-        sta    <gSolution - 2, x     ; opcode SMC
-        eor    <cmpword - 2, x
 .copyop
-        bne    breakbeg ;SMC
+        sta    gSolution - 2, x      ; opcode SMC
+        eor    <cmpword - 2, x
+.branchop
+        bne    breakbeg              ; SMC
 breakbeg
         dex
         dex
         bne    .copyprefix
         tay
-        lda    match
+        lda    .branchop + 1
         bne    zeroind
 breakend
         ldy    nstore + 1
@@ -271,14 +263,14 @@ read_int
         bne    +
         inc    offset + 1
 +       sta    fetched
-        lda    #8
-        sta    left
+        sec
+        rol    left
 
 .updval
         asl    fetched
         rol    value
         rol    value + 1
-        dec    left
+        asl    left
         dex
         bne    .shift
         rts
@@ -301,6 +293,7 @@ read_varint
         jsr    readcopy
         tax
         jsr    read_int
+        clc
         jsr    copytblw
         dec    index
         bne    .readtbl
@@ -308,7 +301,7 @@ read_varint
         sty    buf + 1
         sty    bits
         jsr    reststate
---      ldx    #1
+--      inx                          ; 1
         jsr    read_int
         lsr    value
         rol    buf
@@ -319,15 +312,15 @@ read_varint
         lda    buf + 1
         cmp    (tblptr), y
         bne    +
-        dey             ;key_off
+        dey                          ; key_off
         lda    buf
         cmp    (tblptr), y
         bne    +
-        dey             ;bits_off
+        dey                          ; bits_off
         lda    bits
         cmp    (tblptr), y
         bne    +
-        dey             ;value_off
+        dey                          ; value_off
         lda    (tblptr), y
         rts
 +       clc
@@ -341,7 +334,7 @@ read_varint
         eor    num_items
         bne    -
         sta    index
-        beq    --       ;always
+        beq    --                    ; always
 
 savestate
         pla
@@ -355,9 +348,9 @@ savestate
         dex
         bpl    .pushstate
 .savejmp
-        lda    #0       ;SMC
+        lda    #0                    ; SMC
         pha
-        lda    #0       ;SMC
+        lda    #0                    ; SMC
         pha
 
 copystate
@@ -381,9 +374,9 @@ reststate
         inx
         bne    .popstate
 .restjmp
-        lda    #0       ;SMC
+        lda    #0                    ; SMC
         pha
-        lda    #0       ;SMC
+        lda    #0                    ; SMC
         pha
         rts
 
@@ -408,263 +401,264 @@ copytblw
 -       rts
 
 vetlocs
-;alpha: 00
-        !word   vet+$152;offset
-        !byte   5       ;bits left
-        !byte   $20     ;bits fetched
-        !word   088     ;count of entries
-;alpha: 01
-        !word   vet+$1f1;offset
-        !byte   7       ;bits left
-        !byte   $30     ;bits fetched
-        !word   176     ;count of entries
-;alpha: 02
-        !word   vet+$2de;offset
-        !byte   3       ;bits left
-        !byte   $20     ;bits fetched
-        !word   193     ;count of entries
-;alpha: 03
-        !word   vet+$3d5;offset
-        !byte   5       ;bits left
-        !byte   $30     ;bits fetched
-        !word   103     ;count of entries
-;alpha: 04
-        !word   vet+$471;offset
-        !byte   5       ;bits left
-        !byte   $20     ;bits fetched
-        !word   035     ;count of entries
-;alpha: 05
-        !word   vet+$4b6;offset
-        !byte   2       ;bits left
-        !byte   $00     ;bits fetched
-        !word   144     ;count of entries
-;alpha: 06
-        !word   vet+$579;offset
-        !byte   6       ;bits left
-        !byte   $20     ;bits fetched
-        !word   095     ;count of entries
-;alpha: 07
-        !word   vet+$5ff;offset
-        !byte   4       ;bits left
-        !byte   $30     ;bits fetched
-        !word   084     ;count of entries
-;alpha: 08
-        !word   vet+$673;offset
-        !byte   2       ;bits left
-        !byte   $00     ;bits fetched
-        !word   026     ;count of entries
-;alpha: 09
-        !word   vet+$6a6;offset
-        !byte   5       ;bits left
-        !byte   $38     ;bits fetched
-        !word   012     ;count of entries
-;alpha: 10
-        !word   vet+$6b8;offset
-        !byte   0       ;bits left
-        !byte   $00     ;bits fetched
-        !word   013     ;count of entries
-;alpha: 11
-        !word   vet+$6cd;offset
-        !byte   2       ;bits left
-        !byte   $00     ;bits fetched
-        !word   094     ;count of entries
-;alpha: 12
-        !word   vet+$752;offset
-        !byte   3       ;bits left
-        !byte   $20     ;bits fetched
-        !word   113     ;count of entries
-;alpha: 13
-        !word   vet+$7f2;offset
-        !byte   6       ;bits left
-        !byte   $34     ;bits fetched
-        !word   034     ;count of entries
-;alpha: 14
-        !word   vet+$82d;offset
-        !byte   4       ;bits left
-        !byte   $20     ;bits fetched
-        !word   033     ;count of entries
-;alpha: 15
-        !word   vet+$86d;offset
-        !byte   2       ;bits left
-        !byte   $00     ;bits fetched
-        !word   145     ;count of entries
-;alpha: 16
-        !word   vet+$938;offset
-        !byte   5       ;bits left
-        !byte   $f0     ;bits fetched
-        !word   018     ;count of entries
-;alpha: 17
-        !word   vet+$950;offset
-        !byte   2       ;bits left
-        !byte   $00     ;bits fetched
-        !word   098     ;count of entries
-;alpha: 18
-        !word   vet+$9de;offset
-        !byte   3       ;bits left
-        !byte   $20     ;bits fetched
-        !word   235     ;count of entries
-;alpha: 19
-        !word   vet+$b2c;offset
-        !byte   0       ;bits left
-        !byte   $00     ;bits fetched
-        !word   131     ;count of entries
-;alpha: 20
-        !word   vet+$be6;offset
-        !byte   3       ;bits left
-        !byte   $20     ;bits fetched
-        !word   021     ;count of entries
-;alpha: 21
-        !word   vet+$c0c;offset
-        !byte   2       ;bits left
-        !byte   $00     ;bits fetched
-        !word   046     ;count of entries
-;alpha: 22
-        !word   vet+$c5a;offset
-        !byte   3       ;bits left
-        !byte   $20     ;bits fetched
-        !word   093     ;count of entries
-;alpha: 23
-        !word   vet+$cda;offset
-        !byte   3       ;bits left
-        !byte   $20     ;bits fetched
-        !word   013     ;count of entries
-;alpha: 24
-        !word   vet+$cf1;offset
-        !byte   1       ;bits left
-        !byte   $00     ;bits fetched
-        !word   005     ;count of entries
+;A words
+        !word   vet+$152             ; offset
+        !byte   $08                  ; bits left
+        !byte   $20                  ; bits fetched
+        !word   088                  ; count of entries
+;B words
+        !word   vet+$1f1             ; offset
+        !byte   $02                  ; bits left
+        !byte   $30                  ; bits fetched
+        !word   176                  ; count of entries
+;C words
+        !word   vet+$2de             ; offset
+        !byte   $20                  ; bits left
+        !byte   $20                  ; bits fetched
+        !word   193                  ; count of entries
+;D words
+        !word   vet+$3d5             ; offset
+        !byte   $08                  ; bits left
+        !byte   $30                  ; bits fetched
+        !word   103                  ; count of entries
+;E words
+        !word   vet+$471             ; offset
+        !byte   $08                  ; bits left
+        !byte   $20                  ; bits fetched
+        !word   035                  ; count of entries
+;F words
+        !word   vet+$4b6             ; offset
+        !byte   $40                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   144                  ; count of entries
+;G words
+        !word   vet+$579             ; offset
+        !byte   $04                  ; bits left
+        !byte   $20                  ; bits fetched
+        !word   095                  ; count of entries
+;H words
+        !word   vet+$5ff             ; offset
+        !byte   $10                  ; bits left
+        !byte   $30                  ; bits fetched
+        !word   084                  ; count of entries
+;I words
+        !word   vet+$673             ; offset
+        !byte   $40                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   026                  ; count of entries
+;J words
+        !word   vet+$6a6             ; offset
+        !byte   $08                  ; bits left
+        !byte   $38                  ; bits fetched
+        !word   012                  ; count of entries
+;K words
+        !word   vet+$6b8             ; offset
+        !byte   $00                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   013                  ; count of entries
+;L words
+        !word   vet+$6cd             ; offset
+        !byte   $40                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   094                  ; count of entries
+;M words
+        !word   vet+$752             ; offset
+        !byte   $20                  ; bits left
+        !byte   $20                  ; bits fetched
+        !word   113                  ; count of entries
+;N words
+        !word   vet+$7f2             ; offset
+        !byte   $04                  ; bits left
+        !byte   $34                  ; bits fetched
+        !word   034                  ; count of entries
+;O words
+        !word   vet+$82d             ; offset
+        !byte   $10                  ; bits left
+        !byte   $20                  ; bits fetched
+        !word   033                  ; count of entries
+;P words
+        !word   vet+$86d             ; offset
+        !byte   $40                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   145                  ; count of entries
+;Q words
+        !word   vet+$938             ; offset
+        !byte   $08                  ; bits left
+        !byte   $f0                  ; bits fetched
+        !word   018                  ; count of entries
+;R words
+        !word   vet+$950             ; offset
+        !byte   $40                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   098                  ; count of entries
+;S words
+        !word   vet+$9de             ; offset
+        !byte   $20                  ; bits left
+        !byte   $20                  ; bits fetched
+        !word   235                  ; count of entries
+;T words
+        !word   vet+$b2c             ; offset
+        !byte   $00                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   131                  ; count of entries
+;U words
+        !word   vet+$be6             ; offset
+        !byte   $20                  ; bits left
+        !byte   $20                  ; bits fetched
+        !word   021                  ; count of entries
+;V words
+        !word   vet+$c0c             ; offset
+        !byte   $40                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   046                  ; count of entries
+;W words
+        !word   vet+$c5a             ; offset
+        !byte   $20                  ; bits left
+        !byte   $20                  ; bits fetched
+        !word   093                  ; count of entries
+;there are no solutions starting with 'X'
+;Y words
+        !word   vet+$cda             ; offset
+        !byte   $20                  ; bits left
+        !byte   $20                  ; bits fetched
+        !word   013                  ; count of entries
+;Z words
+        !word   vet+$cf1             ; offset
+        !byte   $80                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   005                  ; count of entries
 
 alllocs
-;alpha: 00
-        !word   all+$174;offset
-        !byte   3       ;bits left
-        !byte   $20     ;bits fetched
-        !word   446     ;count of entries
-;alpha: 01
-        !word   all+$3f3;offset
-        !byte   0       ;bits left
-        !byte   $00     ;bits fetched
-        !word   471     ;count of entries
-;alpha: 02
-        !word   all+$636;offset
-        !byte   4       ;bits left
-        !byte   $20     ;bits fetched
-        !word   515     ;count of entries
-;alpha: 03
-        !word   all+$8ad;offset
-        !byte   6       ;bits left
-        !byte   $34     ;bits fetched
-        !word   381     ;count of entries
-;alpha: 04
-        !word   all+$a8d;offset
-        !byte   4       ;bits left
-        !byte   $30     ;bits fetched
-        !word   175     ;count of entries
-;alpha: 05
-        !word   all+$ba3;offset
-        !byte   5       ;bits left
-        !byte   $20     ;bits fetched
-        !word   303     ;count of entries
-;alpha: 06
-        !word   all+$d33;offset
-        !byte   7       ;bits left
-        !byte   $22     ;bits fetched
-        !word   357     ;count of entries
-;alpha: 07
-        !word   all+$ef5;offset
-        !byte   2       ;bits left
-        !byte   $00     ;bits fetched
-        !word   276     ;count of entries
-;alpha: 08
-        !word   all+$105c;offset
-        !byte   3       ;bits left
-        !byte   $20     ;bits fetched
-        !word   099     ;count of entries
-;alpha: 09
-        !word   all+$10fa;offset
-        !byte   0       ;bits left
-        !byte   $00     ;bits fetched
-        !word   133     ;count of entries
-;alpha: 10
-        !word   all+$11b3;offset
-        !byte   4       ;bits left
-        !byte   $30     ;bits fetched
-        !word   225     ;count of entries
-;alpha: 11
-        !word   all+$1300;offset
-        !byte   0       ;bits left
-        !byte   $00     ;bits fetched
-        !word   336     ;count of entries
-;alpha: 12
-        !word   all+$149a;offset
-        !byte   3       ;bits left
-        !byte   $20     ;bits fetched
-        !word   371     ;count of entries
-;alpha: 13
-        !word   all+$165d;offset
-        !byte   2       ;bits left
-        !byte   $00     ;bits fetched
-        !word   186     ;count of entries
-;alpha: 14
-        !word   all+$1760;offset
-        !byte   4       ;bits left
-        !byte   $30     ;bits fetched
-        !word   160     ;count of entries
-;alpha: 15
-        !word   all+$186c;offset
-        !byte   1       ;bits left
-        !byte   $00     ;bits fetched
-        !word   471     ;count of entries
-;alpha: 16
-        !word   all+$1aa4;offset
-        !byte   1       ;bits left
-        !byte   $00     ;bits fetched
-        !word   041     ;count of entries
-;alpha: 17
-        !word   all+$1ae2;offset
-        !byte   5       ;bits left
-        !byte   $30     ;bits fetched
-        !word   355     ;count of entries
-;alpha: 18
-        !word   all+$1c9d;offset
-        !byte   7       ;bits left
-        !byte   $26     ;bits fetched
-        !word   877     ;count of entries
-;alpha: 19
-        !word   all+$20b2;offset
-        !byte   1       ;bits left
-        !byte   $00     ;bits fetched
-        !word   471     ;count of entries
-;alpha: 20
-        !word   all+$22fa;offset
-        !byte   4       ;bits left
-        !byte   $20     ;bits fetched
-        !word   111     ;count of entries
-;alpha: 21
-        !word   all+$23a3;offset
-        !byte   1       ;bits left
-        !byte   $00     ;bits fetched
-        !word   132     ;count of entries
-;alpha: 22
-        !word   all+$245a;offset
-        !byte   0       ;bits left
-        !byte   $00     ;bits fetched
-        !word   218     ;count of entries
-;alpha: 23
-        !word   all+$2572;offset
-        !byte   1       ;bits left
-        !byte   $00     ;bits fetched
-        !word   013     ;count of entries
-;alpha: 24
-        !word   all+$2589;offset
-        !byte   7       ;bits left
-        !byte   $36     ;bits fetched
-        !word   099     ;count of entries
-;alpha: 25
-        !word   all+$2618;offset
-        !byte   0       ;bits left
-        !byte   $00     ;bits fetched
-        !word   060     ;count of entries
+;A words
+        !word   all+$174             ; offset
+        !byte   $20                  ; bits left
+        !byte   $20                  ; bits fetched
+        !word   446                  ; count of entries
+;B words
+        !word   all+$3f3             ; offset
+        !byte   $00                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   471                  ; count of entries
+;C words
+        !word   all+$636             ; offset
+        !byte   $10                  ; bits left
+        !byte   $20                  ; bits fetched
+        !word   515                  ; count of entries
+;D words
+        !word   all+$8ad             ; offset
+        !byte   $04                  ; bits left
+        !byte   $34                  ; bits fetched
+        !word   381                  ; count of entries
+;E words
+        !word   all+$a8d             ; offset
+        !byte   $10                  ; bits left
+        !byte   $30                  ; bits fetched
+        !word   175                  ; count of entries
+;F words
+        !word   all+$ba3             ; offset
+        !byte   $08                  ; bits left
+        !byte   $20                  ; bits fetched
+        !word   303                  ; count of entries
+;G words
+        !word   all+$d33             ; offset
+        !byte   $02                  ; bits left
+        !byte   $22                  ; bits fetched
+        !word   357                  ; count of entries
+;H words
+        !word   all+$ef5             ; offset
+        !byte   $40                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   276                  ; count of entries
+;I words
+        !word   all+$105c            ; offset
+        !byte   $20                  ; bits left
+        !byte   $20                  ; bits fetched
+        !word   099                  ; count of entries
+;J words
+        !word   all+$10fa            ; offset
+        !byte   $00                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   133                  ; count of entries
+;K words
+        !word   all+$11b3            ; offset
+        !byte   $10                  ; bits left
+        !byte   $30                  ; bits fetched
+        !word   225                  ; count of entries
+;L words
+        !word   all+$1300            ; offset
+        !byte   $00                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   336                  ; count of entries
+;M words
+        !word   all+$149a            ; offset
+        !byte   $20                  ; bits left
+        !byte   $20                  ; bits fetched
+        !word   371                  ; count of entries
+;N words
+        !word   all+$165d            ; offset
+        !byte   $40                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   186                  ; count of entries
+;O words
+        !word   all+$1760            ; offset
+        !byte   $10                  ; bits left
+        !byte   $30                  ; bits fetched
+        !word   160                  ; count of entries
+;P words
+        !word   all+$186c            ; offset
+        !byte   $80                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   471                  ; count of entries
+;Q words
+        !word   all+$1aa4            ; offset
+        !byte   $80                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   041                  ; count of entries
+;R words
+        !word   all+$1ae2            ; offset
+        !byte   $08                  ; bits left
+        !byte   $30                  ; bits fetched
+        !word   355                  ; count of entries
+;S words
+        !word   all+$1c9d            ; offset
+        !byte   $02                  ; bits left
+        !byte   $26                  ; bits fetched
+        !word   877                  ; count of entries
+;T words
+        !word   all+$20b2            ; offset
+        !byte   $80                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   471                  ; count of entries
+;U words
+        !word   all+$22fa            ; offset
+        !byte   $10                  ; bits left
+        !byte   $20                  ; bits fetched
+        !word   111                  ; count of entries
+;V words
+        !word   all+$23a3            ; offset
+        !byte   $80                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   132                  ; count of entries
+;W words
+        !word   all+$245a            ; offset
+        !byte   $00                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   218                  ; count of entries
+;X words
+        !word   all+$2572            ; offset
+        !byte   $80                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   013                  ; count of entries
+;Y words
+        !word   all+$2589            ; offset
+        !byte   $02                  ; bits left
+        !byte   $36                  ; bits fetched
+        !word   099                  ; count of entries
+;Z words
+        !word   all+$2618            ; offset
+        !byte   $00                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   060                  ; count of entries
 
 vet
 !bin "res/vet.bin"
