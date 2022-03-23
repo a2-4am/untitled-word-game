@@ -26,20 +26,19 @@ Print
          jsr   ROM_TEXT_RECALC       ; needed after setting HTAB or VTAB
          ldy   #0
 --       inx
+         !byte $A9                   ; mask TAX
+@count   tax
+         clc
 -        lda   (ptr), y
          beq   PrintExit
+         iny
+         bcs   @count
          cmp   #$FF
-         bne   @cout
-         iny
-         lda   (ptr), y
-         tax
-         iny
-         bne   -
+         beq   -
 @cout    jsr   ROM_PRINT
          dex
          bne   @cout
-         iny
-         bne   --                    ; always branches
+         beq   --                    ; always branches
          ;-----
 PrintBlankRows
          ldx   #5
