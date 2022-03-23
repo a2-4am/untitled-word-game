@@ -254,7 +254,7 @@ SubmitGuess
 -        lda   <gActiveRow+5, x
          cmp   <gSolutionCopy, y
          beq   @foundWrongPosition
-         dey                         ; increment so we find left-most match first
+         dey
          dey
          bpl   -
          bmi   +                     ; always branches
@@ -270,7 +270,7 @@ SubmitGuess
          bpl   +                     ; if already highlighted in alphabet, leave it
          lda   <gActiveRow+5, x
          sta   gAlphabet, y          ; highlight letter in alphabet (flashing)
-+        inx
++        inx                         ; increment so we find left-most match first
          inx
          cpx   #10
          bcc   --
