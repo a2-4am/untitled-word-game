@@ -268,10 +268,10 @@ SubmitGuess
          sta   gAlphabet, y          ; highlight letter in alphabet (flashing)
          !byte $A0                   ; LDY, the following $88 sets N flag
 @letterNotFound
-         dey                         ; increment so we find left-most match first
+         dey
          dey
          bpl   -
-+        inx
++        inx                         ; increment so we find left-most match first
          inx
          cpx   #10
          bcc   --
