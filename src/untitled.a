@@ -253,11 +253,7 @@ SubmitGuess
 --       ldy   #8                    ; third, look for letters in the wrong position
 -        lda   <gActiveRow+5, x
          cmp   <gSolutionCopy, y
-         beq   @foundWrongPosition
-         dey
-         dey
-         bpl   -
-         bmi   +                     ; always branches
+         bne   @letterNotFound
 @foundWrongPosition
          and   #$7F
          sta   <gActiveRow+5, x      ; highlight letter in guess (flashing)
@@ -270,7 +266,12 @@ SubmitGuess
          bpl   +                     ; if already highlighted in alphabet, leave it
          lda   <gActiveRow+5, x
          sta   gAlphabet, y          ; highlight letter in alphabet (flashing)
-+        inx                         ; increment so we find left-most match first
+         !byte $A0                   ; LDY, the following $88 sets N flag
+@letterNotFound
+         dey                         ; increment so we find left-most match first
+         dey
+         bpl   -
++        inx
          inx
          cpx   #10
          bcc   --
