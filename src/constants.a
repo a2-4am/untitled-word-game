@@ -37,8 +37,6 @@
 
 ; soft switches
 KBD =          $C000      ; last key pressed (if any)
-CLR80VID =     $C00C      ; 40 columns (also used to get out of DHGR mode)
-PRIMARYCHARSET= $C00E     ; no mousetext for you
 CLEARKBD =     $C010      ; clear last key pressed
 
 ; ROM routines and addresses
@@ -56,11 +54,10 @@ ROM_NORMAL =   $FE84      ; NORMAL text (instead of INVERSE or FLASH)
 ROM_IN0 =      $FE89      ; SETKBD
 ROM_PR0 =      $FE93      ; SETVID
 
-; other constants
+; application-specific addresses and constants
 CR =           $8D        ; carriage return
 QQ =           $A2        ; quotation mark
 
-; application-specific addresses
 ptr          = $00        ; word
 counter      = $02        ; byte
 gProgressIndicatorIndex = $03 ; byte
@@ -73,7 +70,7 @@ table_size=5 ;from bin file
 word_size=5 ;from bin file
 num_tables=6 ;from bin file
 
-nstore=RNDSEED;$ec ;16-bit
+nstore=RNDSEED ;16-bit
 locstore=$ea ;16-bit
 state=$e6 ;4 bytes struct
 offset=$e6
@@ -94,7 +91,6 @@ preflen=$d7
 prefix=$cd ;word_size * 2 bytes
 match=$cc
 bits=$cb
-FIRST_LOOKUP_GLOBAL=bits
 
 ;structure members
 offset_off=0 ;16-bit

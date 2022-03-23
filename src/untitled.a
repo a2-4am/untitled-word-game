@@ -45,7 +45,6 @@ Print
 PrintBlankRows
          ldx   #5
          stx   counter
-         inx
          stx   VTAB
 -        +LDADDR sBlankRow
          jsr   Print
@@ -87,8 +86,8 @@ sWin
          !byte $FF,50
          !text " ! CONGRATULATIONS !",CR,$FF,40," ",0
 sBlankRow
-         !byte $FF,15
-         !text " . . . . .",CR,CR,0
+         !byte CR,$FF,15
+         !text " . . . . .",CR,0
 
 PER_GAME_GLOBALS
 !pseudopc $50 {
@@ -128,9 +127,6 @@ gActiveGuess
          !byte $60
          !text " . . . . ] ",0
 gSolutionCopy                        ; 9 bytes (not copied)
-!if *+SOLUTION_LEN >= FIRST_LOOKUP_GLOBAL {
-  !serious "per-guess globals overlap with lookup globals"
-}
 }
 PER_GUESS_GLOBALS_LEN=*-PER_GUESS_GLOBALS
 
