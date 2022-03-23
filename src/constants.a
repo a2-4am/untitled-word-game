@@ -31,8 +31,8 @@
 ; 0268..02FF - unused
 ; 0300..03FF - application code and strings
 ; 0400..07F7 - text page
-; 07F8.~0C7C - application code
-;~0C7D..3FFF - application data (compressed word lists)
+; 07F8..0C8E - application code
+; 0C8F..3FFF - application data (compressed word lists)
 ;------------------------------------------------------------------------------
 
 ; soft switches
