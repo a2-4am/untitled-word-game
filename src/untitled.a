@@ -213,14 +213,12 @@ SubmitGuess
          ldx   #8                    ; skip expensive exists() call if guess is correct
 -        lda   <gActiveGuess, x
          cmp   <gSolution, x
-         bne   @checkExists
-         dex
-         bpl   -
-         bmi   @skipExists
-@checkExists
+         beq   @checkSol
          jsr   exists
          bne   BadGuess
-@skipExists
+@checkSol
+         dex
+         bpl   -
          ldy   #8                    ; first, update alphabet to clear letters we've used
 -        lda   <gActiveGuess, y
          and   #$1F
@@ -288,7 +286,8 @@ SubmitGuess
          cpy   #26
          bne   -
          jsr   DeactivateRowAndPrint
-         lda   counter
+         +LDADDR sWin
+         ldx   counter
          beq   Win
          inc   <gActiveVTAB
          inc   <gActiveVTAB
@@ -298,10 +297,8 @@ SubmitGuess
 Lose
          tay
          lda   #<sLose
-         bne   +                     ; always branches
 Win
-         +LDADDR sWin
-+        jsr   PrintAt17
+         jsr   PrintAt17
 WaitForKeyThenNewGame
          jsr   WaitForKey
 NewGame
@@ -314,13 +311,11 @@ NewGame
          jsr   nth
          jsr   PrintBlankRows
 NewGuess
-         ldx   #PER_GUESS_GLOBALS_LEN
--        lda   PER_GUESS_GLOBALS-1, x
-         sta   <PER_GUESS_GLOBALS_ZP-1, x
-         dex
-         bne   -
-         ldy   #SOLUTION_LEN
--        ldx   <gSolution-1, y
+         ldy   #PER_GUESS_GLOBALS_LEN
+-        ldx   PER_GUESS_GLOBALS-1, y
+         stx   <PER_GUESS_GLOBALS_ZP-1, y
+;;         ldy   #SOLUTION_LEN
+         ldx   <gSolution-1, y
          stx   <gSolutionCopy-1, y   ; clobbered during submit
          dey
          bne   -
