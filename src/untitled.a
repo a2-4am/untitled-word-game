@@ -321,7 +321,8 @@ NewKey
          cmp   #$8D                  ; CR
          bne   +
          jmp   SubmitGuess
-+        cmp   #$88                  ; left arrow
++        ldx   <gActiveLetterIndex
+         cmp   #$88                  ; left arrow
          beq   DeleteLetter
          cmp   #$FF                  ; delete
          beq   DeleteLetter
@@ -332,7 +333,6 @@ NewKey
          bcc   NewKey
          cmp   #$DB
          bcs   NewKey
-         ldx   <gActiveLetterIndex
          cpx   #10
          bcs   NewKey                ; already have 5 letters in this guess, so can't add another
          sta   <gActiveRow+5, x      ; store new letter
@@ -347,7 +347,7 @@ UpdateCursor
          bne   RefreshGuess          ; always branches
          ;-----
 DeleteLetter
-         ldx   <gActiveLetterIndex
+         txa
          beq   NewKey                ; 0 letters in this guess, so nothing to delete
          cpx   #10
          bcs   +
