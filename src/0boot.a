@@ -371,7 +371,7 @@ indextbl        ;the 0 also terminates the patchtbl list!
 !if *!=kProgressIndicators {
   !serious "kProgressIndicators starts at ",*, ", must adjust constants.a"
 }
-         !byte $AF,$AD,$DC,$A1
+         !byte $2F,$2D,$1C,$21
 !if *>$100 {
   !serious "0boot is too large, ends at ", *
 }
