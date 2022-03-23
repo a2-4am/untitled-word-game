@@ -280,11 +280,12 @@ SubmitGuess
          inc   <gActiveVTAB
          inc   <gActiveVTAB
          lda   <gActiveVTAB
-         cmp   #16
-         bcc   NewGuess
+         eor   #16
+         bne   NewGuess
 Lose
-         +LDADDR sLose
-         beq   +                     ; always branches
+         tay
+         lda   #<sLose
+         bne   +                     ; always branches
 Win
          +LDADDR sWin
 +        jsr   PrintAt17
