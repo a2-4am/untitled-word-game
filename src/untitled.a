@@ -17,7 +17,6 @@ PrintActiveRow
          +HIDE_NEXT_2_BYTES
 PrintAt17
          ldx   #17
-PrintAtX
          stx   VTAB
 Print
 ; out:   Z=1
