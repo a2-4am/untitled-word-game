@@ -204,8 +204,7 @@ BadGuess
          bne   @incdec
 -        jmp   NewKey
 SubmitGuess
-         lda   <gActiveLetterIndex
-         cmp   #10                   ; refuse guess if fewer than 5 letters
+         cpx   #10                   ; refuse guess if fewer than 5 letters
          bcc   -
          ldx   #8                    ; skip expensive exists() call if guess is correct
 -        lda   <gActiveRow+5, x
@@ -318,11 +317,11 @@ RefreshGuess
          jsr   PrintActiveRow
 NewKey
          jsr   WaitForKey
+         ldx   <gActiveLetterIndex
          cmp   #$8D                  ; CR
          bne   +
          jmp   SubmitGuess
-+        ldx   <gActiveLetterIndex
-         cmp   #$88                  ; left arrow
++        cmp   #$88                  ; left arrow
          beq   DeleteLetter
          cmp   #$FF                  ; delete
          beq   DeleteLetter
