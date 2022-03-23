@@ -250,15 +250,14 @@ SubmitGuess
          dex
          bne   -
          ;X=0
---       ldy   #0                    ; third, look for letters in the wrong position
+--       ldy   #8                    ; third, look for letters in the wrong position
 -        lda   <gActiveRow+5, x
          cmp   <gSolutionCopy, y
          beq   @foundWrongPosition
-         iny                         ; increment so we find left-most match first
-         iny
-         cpy   #10
-         bcc   -
-         bcs   +                     ; always branches
+         dey                         ; increment so we find left-most match first
+         dey
+         bpl   -
+         bmi   +                     ; always branches
 @foundWrongPosition
          and   #$7F
          sta   <gActiveRow+5, x      ; highlight letter in guess (flashing)
@@ -306,12 +305,13 @@ NewGuess
          sta   <PER_GUESS_GLOBALS_ZP-1, x
          dex
          bne   -
-         ldx   #SOLUTION_LEN
--        lda   <gSolution-1, x
-         sta   <gSolutionCopy-1, x   ; clobbered during submit
-         dex
+         ldy   #SOLUTION_LEN
+-        ldx   <gSolution-1, y
+         stx   <gSolutionCopy-1, y   ; clobbered during submit
+         dey
          bne   -
-         +LDADDR gAlphabet
+         lda   #<gAlphabet
+         ;Y=0
          jsr   PrintAt17
 RefreshGuess
          jsr   PrintActiveRow
