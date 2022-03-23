@@ -195,8 +195,6 @@ PER_GUESS_GLOBALS_LEN=*-PER_GUESS_GLOBALS
          jmp   WaitForKeyThenNewGame
 *=$7F8
 BadGuess
-         lda   #6
-         sta   counter
 @incdec  inc   <gActiveRow+1
          jsr   PrintActiveRow
          lda   #$B0
@@ -211,6 +209,7 @@ SubmitGuess
          cpx   #10                   ; refuse guess if fewer than 5 letters
          bcc   -
          ldx   #8                    ; skip expensive exists() call if guess is correct
+         stx   counter
 -        lda   <gActiveGuess, x
          cmp   <gSolution, x
          beq   @checkSol
