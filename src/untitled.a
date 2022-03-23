@@ -262,7 +262,7 @@ SubmitGuess
          and   #$7F
          sta   <gActiveRow+5, x      ; highlight letter in guess (flashing)
          and   #$1F
-         sta   <gSolutionCopy, y     ; clobber letter in solution so we don't double-count
+         stx   <gSolutionCopy, y     ; clobber letter in solution so we don't double-count
          tay
          lda   kAlphabetLetterIndex-1, y
          tay
