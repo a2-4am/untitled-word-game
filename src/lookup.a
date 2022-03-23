@@ -111,7 +111,7 @@ tryvet
 ; out:   Z=1 if word was found in either list
 ;        Z=0 otherwise
 ;------------------------------------------------------------------------------
-cmpword=<gActiveRow+5
+cmpword=<gActiveGuess
 exists
         lda    cmpword
         sta    nstore + 1
@@ -161,18 +161,11 @@ read_payload
 read_payload_r
         jsr    checkres
         beq    checkret
-        inc    <gProgressIndicatorIndex
-        lda    <gProgressIndicatorIndex
-        and    #7
-        lsr
-        bcc    +
-        tax
-        lda    <sProgressIndicators, x
-        ldy    #11
-        sta    ($28), y
-+       lda    depth
+        lda    depth
         cmp    #num_tables - 2
         bcs    .gotchildren
+        ldy    #11
+        jsr    DisplayProgress
         ldx    tbl5ptr
         ldy    tbl5ptr + 1
         jsr    read_varint

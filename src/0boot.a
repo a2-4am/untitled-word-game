@@ -11,7 +11,7 @@
         tracks    = $04         ;user-defined
         first_trk = $01         ;user-defined
         address   = $03         ;user-defined, high byte of first page
-        entry     = $6F8        ;user-defined
+        entry     = $678        ;user-defined
         sectors   = $00         ;user-defined, sectors to load from partial track (increase tracks count first)
         interleave= 1           ;user-defined, to retain .dsk sector ordering
         multi_regn= 0           ;user-defined, load to non-sequential addresses
@@ -351,7 +351,7 @@ set_address
 }
 
 addrtbl
-        !word   driveoff-1, ROM_IN0-1, ROM_PR0-1, ROM_NORMAL-1, ROM_TEXT-1
+        !word   driveoff-1, ROM_IN0-1, ROM_PR0-1, ROM_NORMAL-1
 stackend
 patchtbl
         !byte   <(slotpatch1+1), <(slotpatch2+1), <(slotpatch3+1), <(slotpatch4+1), <(slotpatch5+1), <(slotpatch7+1)
@@ -368,6 +368,10 @@ indextbl        ;the 0 also terminates the patchtbl list!
 +        lda   KBD
          bpl   -
          rts
+!if *!=kProgressIndicators {
+  !serious "kProgressIndicators starts at ",*, ", must adjust constants.a"
+}
+         !byte $AF,$AD,$DC,$A1
 !if *>$100 {
   !serious "0boot is too large, ends at ", *
 }

@@ -9,8 +9,8 @@
 *=$300
 DeactivateRowAndPrint
          lda   #$A0
-         sta   <gActiveRow+3
-         sta   <gActiveRow+15
+         sta   <gActiveRow+4
+         sta   <gActiveRow+16
 PrintActiveRow
          +LDADDR gActiveRow
          ldx   <gActiveVTAB
@@ -19,14 +19,14 @@ PrintAt17
          ldx   #17
 PrintAtX
          stx   VTAB
-         ldx   #0
-         stx   HTAB
 Print
 ; out:   Z=1
+         ldx   #0
+         stx   HTAB
          +ST16 ptr
          jsr   ROM_TEXT_RECALC       ; needed after setting HTAB or VTAB
          ldy   #0
---       ldx   #1
+--       inx
 -        lda   (ptr), y
          beq   PrintExit
          cmp   #$FF
@@ -94,8 +94,6 @@ PER_GAME_GLOBALS
 !pseudopc $50 {
 PER_GAME_GLOBALS_ZP
 
-sProgressIndicators                  ; length 4
-         !byte $AF,$AD,$DC,$A1
 gAlphabet                            ; 0-terminated
          !byte $FF,10
          !text " Q W E R T Y U I O P",CR
@@ -124,10 +122,13 @@ PER_GUESS_GLOBALS_ZP
 gActiveLetterIndex
          !byte 0
 gActiveRow
-         !byte $FF,13
-         !text " [ ",$60," . . . . ] ",0
+         !byte $FF,12
+         !text "  [ "
+gActiveGuess
+         !byte $60
+         !text " . . . . ] ",0
 gSolutionCopy                        ; 9 bytes (not copied)
-!if *+9 >= bits {
+!if *+SOLUTION_LEN >= FIRST_LOOKUP_GLOBAL {
   !serious "per-guess globals overlap with lookup globals"
 }
 }
@@ -181,12 +182,15 @@ PER_GUESS_GLOBALS_LEN=*-PER_GUESS_GLOBALS
          !text "                                        "
 *=$7D0
          !text "       V1.0 (C) 2022 4AM & QKUMBA       "
-*=$6F8
+*=$678
+         jsr   ROM_TEXT
          lda   #$04
+         jmp   $6F8
+*=$6F8
          sta   TEXTTOP
+         lda   #$15
          jmp   $778
 *=$778
-         lda   #$15
          sta   TEXTBOTTOM
          jmp   WaitForKeyThenNewGame
 *=$7F8
@@ -207,7 +211,7 @@ SubmitGuess
          cpx   #10                   ; refuse guess if fewer than 5 letters
          bcc   -
          ldx   #8                    ; skip expensive exists() call if guess is correct
--        lda   <gActiveRow+5, x
+-        lda   <gActiveGuess, x
          cmp   <gSolution, x
          bne   @checkExists
          dex
@@ -218,7 +222,7 @@ SubmitGuess
          bne   BadGuess
 @skipExists
          ldy   #8                    ; first, update alphabet to clear letters we've used
--        lda   <gActiveRow+5, y
+-        lda   <gActiveGuess, y
          and   #$1F
          tax
          lda   kAlphabetLetterIndex-1, x
@@ -233,29 +237,29 @@ SubmitGuess
          lda   #5                    ; second, look for letters in the right position
          sta   counter
          ldx   #10                   ; 2 more than we want, so loop terminates at X=0
--        lda   <gActiveRow+5-2, x
+-        lda   <gActiveGuess-2, x
          cmp   <gSolutionCopy-2, x
          bne   +
          dec   counter
          and   #$1F
-         sta   <gActiveRow+5-2, x    ; highlight letter in guess (inverse)
+         sta   <gActiveGuess-2, x    ; highlight letter in guess (inverse)
          sta   <gSolutionCopy-2, x   ; clobber letter in solution so we don't double-count
          tay
          lda   kAlphabetLetterIndex-1, y
          tay
-         lda   <gActiveRow+5-2, x
+         lda   <gActiveGuess-2, x
          sta   gAlphabet, y          ; highlight letter in alphabet (inverse)
 +        dex
          dex
          bne   -
          ;X=0
 --       ldy   #8                    ; third, look for letters in the wrong position
--        lda   <gActiveRow+5, x
+-        lda   <gActiveGuess, x
          cmp   <gSolutionCopy, y
          bne   @letterNotFound
 @foundWrongPosition
          and   #$7F
-         sta   <gActiveRow+5, x      ; highlight letter in guess (flashing)
+         sta   <gActiveGuess, x      ; highlight letter in guess (flashing)
          and   #$1F
          stx   <gSolutionCopy, y     ; clobber letter in solution so we don't double-count
          tay
@@ -263,7 +267,7 @@ SubmitGuess
          tay
          lda   <gAlphabet, y
          bpl   +                     ; if already highlighted in alphabet, leave it
-         lda   <gActiveRow+5, x
+         lda   <gActiveGuess, x
          sta   gAlphabet, y          ; highlight letter in alphabet (flashing)
          !byte $A0                   ; LDY, the following $88 sets N flag
 @letterNotFound
@@ -274,6 +278,15 @@ SubmitGuess
          inx
          cpx   #10
          bcc   --
+         ldy   #11
+-        lda   <gActiveGuess-11-4, y
+         sta   ($28), y
+         iny
+         jsr   DisplayProgress
+         lda   #$B0
+         jsr   ROM_WAIT
+         cpy   #26
+         bne   -
          jsr   DeactivateRowAndPrint
          lda   counter
          beq   Win
@@ -335,7 +348,7 @@ NewKey
          bcs   NewKey
          cpx   #10
          bcs   NewKey                ; already have 5 letters in this guess, so can't add another
-         sta   <gActiveRow+5, x      ; store new letter
+         sta   <gActiveGuess, x      ; store new letter
          inx
          inx
 UpdateCursor
@@ -343,7 +356,7 @@ UpdateCursor
          cpx   #10
          bcs   RefreshGuess
          lda   #$60                  ; 'cursor' (flashing space)
-         sta   <gActiveRow+5, x      ; if not 5 letters yet, show 'cursor' at new position
+         sta   <gActiveGuess, x      ; if not 5 letters yet, show 'cursor' at new position
          bne   RefreshGuess          ; always branches
          ;-----
 DeleteLetter
@@ -352,11 +365,19 @@ DeleteLetter
          cpx   #10
          bcs   +
          lda   #$AE                  ; '.'
-         sta   <gActiveRow+5, x
+         sta   <gActiveGuess, x
 +        dex
          dex
          bpl   UpdateCursor          ; always branches
          ;-----
+DisplayProgress
+         inc   <gProgressIndicatorIndex
+         lda   <gProgressIndicatorIndex
+         and   #3
+         tax
+         lda   <kProgressIndicators, x
+         sta   ($28), y
+         rts
 
          !src  "src/lookup.a"
 

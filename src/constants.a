@@ -7,8 +7,8 @@
 ;
 ; DURING BOOT
 ; 0000..00EE - 0boot code
-; 00EF..00FD - application code (WaitForKey)
-; 00FE..00FF - unused
+; 00ED..00FB - application code (WaitForKey)
+; 00FC..00FF - application data
 ; 0100..010F - sector interleave array
 ; 0110..0165 - 0boot data (2-bit array)
 ; 0166..01CF - 0boot data (preshift array)
@@ -24,8 +24,8 @@
 ; 003A..004D - unused
 ; 004E..004F - random seed (updated by WaitForKey, could be moved if necessary)
 ; 0050..00EE - globals (copied from page 3 during gameplay)
-; 00EF..00FD - application code (WaitForKey, persists from boot phase)
-; 00FE..00FF - unused
+; 00ED..00FB - application code (WaitForKey, persists from boot phase)
+; 00FC..00FF - application data
 ; 0100..01FF - stack
 ; 0200..0267 - clobbered by nth() and exists()
 ; 0268..02FF - unused
@@ -64,7 +64,8 @@ QQ =           $A2        ; quotation mark
 ptr          = $00        ; word
 counter      = $02        ; byte
 gProgressIndicatorIndex = $03 ; byte
-WaitForKey   = $00EF
+WaitForKey   = $00ED
+kProgressIndicators = $FC
 
 tempstor=$200 ;requires 26*tblsize(4) bytes
 
@@ -93,6 +94,7 @@ preflen=$d7
 prefix=$cd ;word_size * 2 bytes
 match=$cc
 bits=$cb
+FIRST_LOOKUP_GLOBAL=bits
 
 ;structure members
 offset_off=0 ;16-bit
