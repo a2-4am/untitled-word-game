@@ -99,7 +99,13 @@ nth
 tryvet
         stx    .copyop
         sty    .branchop + 1
-        lda    #<vettbl0
+        lda    locstore
+        eor    #<Xwords
+        bne    +
+        lda    locstore + 1
+        eor    #>Xwords
+        beq    checkres
++       lda    #<vettbl0
         bcc    settblbase            ; always
 
 ;------------------------------------------------------------------------------
@@ -508,7 +514,11 @@ vetlocs
         !byte   $20                  ; bits left
         !byte   $20                  ; bits fetched
         !word   093                  ; count of entries
-;there are no solutions starting with 'X'
+Xwords ;dummy entry since no solutions begin with 'X'
+        !word   0                    ; offset
+        !byte   $00                  ; bits left
+        !byte   $00                  ; bits fetched
+        !word   000                  ; count of entries
 ;Y words
         !word   vet+$cda             ; offset
         !byte   $20                  ; bits left
