@@ -1,15 +1,38 @@
 ;license:MIT
-;(c) 2020-2022 by 4am
+;(c) 2022 by 4am
 ;
 
 ;------------------------------------------------------------------------------
 ; YE OLDE GRAND UNIFIED MEMORY MAP
 ;
-; MAIN MEMORY
+; DURING BOOT
+; 0000..00EE - 0boot code
+; 00EF..00FD - application code (WaitForKey)
+; 00FE..00FF - unused
+; 0100..010F - sector interleave array
+; 0110..0165 - 0boot data (2-bit array)
+; 0166..01CF - 0boot data (preshift array)
+; 01D0..01DA - unused
+; 01DB..01FF - 0boot stack
+; 0200..02FF - 0boot data (grouped array)
+; 0800..09FF - boot code as read from disk
 
+; DURING GAMEPLAY
+; 0000..0003 - temporary pointers and counters
+; 0004..001F - unused
+; 0020..0039 - used by ROM for text output (could find a few unused locations if necessary)
+; 003A..004D - unused
+; 004E..004F - random seed (updated by WaitForKey, could be moved if necessary)
+; 0050..00EE - globals (copied from page 3 during gameplay)
+; 00EF..00FD - application code (WaitForKey, persists from boot phase)
+; 00FE..00FF - unused
+; 0100..01FF - stack
+; 0200..0267 - clobbered by nth() and exists()
+; 0268..02FF - unused
+; 0300..03FF - application code and strings
 ; 0400..07F7 - text page
-
-; 4000+      - not available (!)
+; 07F8.~0C7C - application code
+;~0C7D..3FFF - application data (compressed word lists)
 ;------------------------------------------------------------------------------
 
 ; soft switches
