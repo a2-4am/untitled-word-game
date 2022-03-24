@@ -10,12 +10,14 @@
 ; 00ED..00FB - application code (WaitForKey)
 ; 00FC..00FF - application data
 ; 0100..010F - sector interleave array
-; 0110..0165 - 0boot data (2-bit array)
-; 0166..01CF - 0boot data (preshift array)
-; 01D0..01DB - application code (DisplayProgress)
+; 0110..011B - application code (DisplayProgress)
+; 011C..0171 - 0boot data (2-bit array)
+; 0172..01DB - 0boot data (preshift array)
+; 01DC       - unused
 ; 01DD..01FF - 0boot stack
 ; 0200..02FF - 0boot data (grouped array)
-; 0800..09FF - boot code as read from disk
+; 0800..08FF - T00S00 read from disk
+; 0900..09FF - T00S0E read from disk
 
 ; DURING GAMEPLAY
 ; 0000..0003 - temporary pointers and counters
@@ -26,9 +28,9 @@
 ; 0050..00EE - globals (copied from page 3 during gameplay)
 ; 00ED..00FB - application code (WaitForKey, persists from boot phase)
 ; 00FC..00FF - application data
-; 0100..01CF - unused
-; 01D0..01DB - application code (DisplayProgress, persists from boot phase)
-; 01DC..01FF - application stack
+; 0100..010F - unused
+; 0110..011B - application code (DisplayProgress, persists from boot phase)
+; 011C..01FF - application stack (mostly unused)
 ; 0200..0267 - clobbered by nth() and exists()
 ; 0268..02FF - unused
 ; 0300..03FF - application code and strings
@@ -65,7 +67,7 @@ counter      = $02        ; byte
 gProgressIndicatorIndex = $03 ; byte
 WaitForKey   = $00ED
 kProgressIndicators = $FC
-DisplayProgress = $1D0
+DisplayProgress = $110
 
 tempstor=$200 ;requires 26*tblsize(4) bytes
 

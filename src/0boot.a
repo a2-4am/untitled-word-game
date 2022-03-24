@@ -30,11 +30,11 @@
         ;memory usage:
         ;16 bytes ($100-$10F)
         interleavetbl = $100
-        ;86 bytes ($110-165) dynamic table (2-bit array)
-        bit2tbl   = $110
-        ;106 bytes ($166-1CF) static table
-        preshift  = $166
-        ;256 bytes ($200-2FF) static table
+        ;86 bytes ($11C-$171) dynamic table (2-bit array)
+        bit2tbl   = $11C
+        ;106 bytes ($172-$1DB) static table
+        preshift  = bit2tbl+$56
+        ;256 bytes ($200-$2FF) static table
         grouped   = $200
 
          !source "src/constants.a"              ; no code
