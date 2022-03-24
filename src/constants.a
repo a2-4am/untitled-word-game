@@ -6,18 +6,16 @@
 ; YE OLDE GRAND UNIFIED MEMORY MAP
 ;
 ; DURING BOOT
-; 0000..00EE - 0boot code
-; 00ED..00FB - application code (WaitForKey)
-; 00FC..00FF - application data
-; 0100..010F - sector interleave array
-; 0110..011B - application code (DisplayProgress)
-; 011C..0171 - 0boot data (2-bit array)
-; 0172..01DB - 0boot data (preshift array)
-; 01DC       - unused
-; 01DD..01FF - 0boot stack
+; 0000..00E9 - 0boot code
+; 00EA..00F8 - application code (WaitForKey)
+; 00F9..00FC - application data
+; 00FD..00FF - unused
+; 0100..0155 - 0boot data (2-bit array)
+; 0156..01BF - 0boot data (preshift array)
+; 01C0..01CB - application code (DisplayProgress)
+; 01CC..01FF - 0boot stack
 ; 0200..02FF - 0boot data (grouped array)
-; 0800..08FF - T00S00 read from disk
-; 0900..09FF - T00S0E read from disk
+; 0800..09FF - boot code as read from disk
 
 ; DURING GAMEPLAY
 ; 0000..0003 - temporary pointers and counters
@@ -25,12 +23,12 @@
 ; 0020..0039 - used by ROM for text output (could find a few unused locations if necessary)
 ; 003A..004D - unused
 ; 004E..004F - random seed (updated by WaitForKey, could be moved if necessary)
-; 0050..00EE - globals (copied from page 3 during gameplay)
-; 00ED..00FB - application code (WaitForKey, persists from boot phase)
-; 00FC..00FF - application data
-; 0100..010F - unused
-; 0110..011B - application code (DisplayProgress, persists from boot phase)
-; 011C..01FF - application stack (mostly unused)
+; 0050..00E9 - globals (copied from page 3 during gameplay)
+; 00EA..00F8 - application code (WaitForKey, persists from boot phase)
+; 00F9..00FC - application data (ProgressIndicators, persists from boot phase)
+; 00FD..01BF - unused
+; 01C0..01CB - application code (DisplayProgress, persists from boot phase)
+; 01CC..01FF - application stack
 ; 0200..0267 - clobbered by nth() and exists()
 ; 0268..02FF - unused
 ; 0300..03FF - application code and strings
@@ -65,9 +63,9 @@ QQ =           $A2        ; quotation mark
 ptr          = $00        ; word
 counter      = $02        ; byte
 gProgressIndicatorIndex = $03 ; byte
-WaitForKey   = $00ED
-kProgressIndicators = $FC
-DisplayProgress = $110
+WaitForKey   = $00EA
+kProgressIndicators = $F9
+DisplayProgress = $1C0
 
 tempstor=$200 ;requires 26*tblsize(4) bytes
 
@@ -76,26 +74,25 @@ word_size=5 ;from bin file
 num_tables=6 ;from bin file
 
 nstore=RNDSEED ;16-bit
-locstore=$ea ;16-bit
-state=$e6 ;4 bytes struct
-offset=$e6
-left=$e8
-fetched=$e9
+locstore=$e7 ;16-bit
+state=$e3 ;4 bytes struct
+offset=$e3
+left=$e5
+fetched=$e6
 statesize=4
 
-value=$e4 ;16-bit
-num_items=$e3
-index=$e2
-tblptr=$e0 ;16-bit
-buf=$de ;16-bit
-tbl0ptr=$dc ;16-bit
-tbl5ptr=$da ;16-bit
-depth=$d9
-num_children=$d8
-preflen=$d7
-prefix=$cd ;word_size * 2 bytes
-match=$cc
-bits=$cb
+value=$e1 ;16-bit
+num_items=$e0
+index=$df
+tblptr=$dd ;16-bit
+buf=$db ;16-bit
+tbl0ptr=$d9 ;16-bit
+tbl5ptr=$d7 ;16-bit
+depth=$d6
+num_children=$d5
+preflen=$d4
+prefix=$ca ;word_size * 2 bytes
+bits=$c9
 
 ;structure members
 offset_off=0 ;16-bit

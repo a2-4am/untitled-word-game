@@ -13,7 +13,7 @@
         address   = $03         ;user-defined, high byte of first page
         entry     = $678        ;user-defined
         sectors   = $00         ;user-defined, sectors to load from partial track (increase tracks count first)
-        interleave= 1           ;user-defined, to retain .dsk sector ordering
+        interleave= 0           ;user-defined, to retain .dsk sector ordering
         multi_regn= 0           ;user-defined, load to non-sequential addresses
         !if multi_regn=1 {
           !macro region {region !byte $60,0,$0,0,$0,0,$0,0,$0,0,$0,0,$0,0,$0,0,$0,0,$0,0,$0,0,$0,0}
@@ -28,13 +28,11 @@
         version   = 3
 
         ;memory usage:
-        ;16 bytes ($100-$10F)
-        interleavetbl = $100
-        ;86 bytes ($11C-$171) dynamic table (2-bit array)
-        bit2tbl   = $11C
-        ;106 bytes ($172-$1DB) static table
-        preshift  = bit2tbl+$56
-        ;256 bytes ($200-$2FF) static table
+        ;86 bytes ($100-155) dynamic table (2-bit array)
+        bit2tbl   = $100
+        ;106 bytes ($156-1BF) static table
+        preshift  = $156
+        ;256 bytes ($200-2FF) static table
         grouped   = $200
 
          !source "src/constants.a"              ; no code
@@ -254,8 +252,11 @@ read
 !if interleave=1 {
         tax
         ldy     interleavetbl, x
-}
         sty     <(sector+1)     ;store index for later
+} else {
+        sta     <(sector+1)     ;store index for later
+        tay
+}
         ldx     <addrtbl, y     ;fetch corresponding address
         stx     <(adrpatch6+2)
         dex
