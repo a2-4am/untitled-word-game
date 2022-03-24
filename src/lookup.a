@@ -662,7 +662,8 @@ alllocs
         !byte   $00                  ; bits fetched
         !word   060                  ; count of entries
 
+; skip first 5 bytes of each file because header information is hardcoded
 vet
-!bin "res/vet.bin"
+!bin "res/vet.bin",,5
 all
-!bin "res/all.bin"
+!bin "res/all.bin",,5
