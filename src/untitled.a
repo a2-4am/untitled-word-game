@@ -8,9 +8,17 @@
          !source "src/macros.a"      ; no code
 *=$300
 DeactivateRowAndPrint
+         ldy   #11
+-        lda   <gActiveGuess-11-4, y
+         sta   ($28), y
+         iny
+         jsr   DisplayProgress
          lda   #$A0
          sta   <gActiveRow+4
          sta   <gActiveRow+16
+         jsr   ROM_WAIT
+         cpy   #26
+         bne   -
 PrintActiveRow
          +LDADDR gActiveRow
          ldx   <gActiveVTAB
@@ -40,15 +48,9 @@ Print
          bne   @cout
          beq   --                    ; always branches
          ;-----
-PrintBlankRows
-         ldx   #5
-         stx   counter
-         stx   VTAB
--        +LDADDR sBlankRow
-         jsr   Print
-         dec   counter
-         bne   -
 PrintExit
+         +LDADDR sWin
+         ldx   counter
          rts
 
 kAlphabetLetterIndex                 ; 0-based index into sAlphabet where each letter is positioned
@@ -269,18 +271,7 @@ SubmitGuess
          inx
          cpx   #10
          bcc   --
-         ldy   #11
--        lda   <gActiveGuess-11-4, y
-         sta   ($28), y
-         iny
-         jsr   DisplayProgress
-         lda   #$B0
-         jsr   ROM_WAIT
-         cpy   #26
-         bne   -
          jsr   DeactivateRowAndPrint
-         +LDADDR sWin
-         ldx   counter
          beq   Win
          inc   <gActiveVTAB
          inc   <gActiveVTAB
@@ -302,7 +293,13 @@ NewGame
          bne   -
          jsr   ROM_HOME
          jsr   nth
-         jsr   PrintBlankRows
+         ldx   #5
+         stx   counter
+         stx   VTAB
+-        +LDADDR sBlankRow
+         jsr   Print
+         dec   counter
+         bne   -
 NewGuess
          ldy   #PER_GUESS_GLOBALS_LEN
 -        ldx   PER_GUESS_GLOBALS-1, y
