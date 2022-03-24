@@ -358,14 +358,6 @@ DeleteLetter
          dex
          bpl   UpdateCursor          ; always branches
          ;-----
-DisplayProgress
-         inc   <gProgressIndicatorIndex
-         lda   <gProgressIndicatorIndex
-         and   #3
-         tax
-         lda   <kProgressIndicators, x
-         sta   ($28), y
-         rts
 
          !src  "src/lookup.a"
 

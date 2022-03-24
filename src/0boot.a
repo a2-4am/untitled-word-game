@@ -180,7 +180,22 @@ preread         ;must exit with carry set!
         dex
         dex
         bpl     -
+        ldx     #DISPLAY_PROGRESS_LEN-1
+-       lda     DISPLAY_PROGRESS_SRC, x
+        sta     DisplayProgress, x
+        dex
+        bpl     -
         rts
+
+DISPLAY_PROGRESS_SRC
+         inc   <gProgressIndicatorIndex
+         lda   <gProgressIndicatorIndex
+         and   #3
+         tax
+         lda   <kProgressIndicators, x
+         sta   ($28), y
+         rts
+DISPLAY_PROGRESS_LEN=*-DISPLAY_PROGRESS_SRC
 
 !if interleave=1 {
 sectbl !byte 0,7,$e,6,$d,5,$c,4,$b,3,$a,2,9,1,8,$f
