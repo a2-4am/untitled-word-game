@@ -253,10 +253,9 @@ SubmitGuess
 @foundWrongPosition
          and   #$7F
          sta   <gActiveGuess, x      ; highlight letter in guess (flashing)
-         and   #$1F
          stx   <gSolutionCopy, y     ; clobber letter in solution so we don't double-count
          tay
-         lda   kAlphabetLetterIndex-1, y
+         lda   kAlphabetLetterIndex-$41, y
          tay
          lda   <gAlphabet, y
          bpl   +                     ; if already highlighted in alphabet, leave it
