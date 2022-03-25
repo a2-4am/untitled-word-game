@@ -193,6 +193,7 @@ DISPLAY_PROGRESS_SRC
          lda   <kProgressIndicators, x
          sta   ($28), y
          rts
+         !byte $E9,$AF,$B8,$D0,$E9,$B8,$D0,$AF,$B8,$9A,$AF,$89,$9A
 DISPLAY_PROGRESS_LEN=*-DISPLAY_PROGRESS_SRC
 
 !if interleave=1 {

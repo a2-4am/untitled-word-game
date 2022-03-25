@@ -282,6 +282,22 @@ Lose
          lda   #<sLose
 Win
          jsr   PrintAt17
+         ldx   counter
+         bne   WaitForKeyThenNewGame ; no tune if you lost
+         ldy   #$0C
+---      ldx   #$38
+         stx   counter
+--       ldx   kWinTune, y
+-        cpx   counter
+         bne   +
+         lda   SPEAKER
++        dex
+         bne   -
+         lda   SPEAKER
+         dec   counter
+         bne   --
+         dey
+         bpl   ---
 WaitForKeyThenNewGame
          jsr   WaitForKey
 NewGame

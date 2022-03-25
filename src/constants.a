@@ -13,7 +13,8 @@
 ; 0100..0155 - 0boot data (2-bit array)
 ; 0156..01BF - 0boot data (preshift array)
 ; 01C0..01CB - application code (DisplayProgress)
-; 01CC..01FF - 0boot stack
+; 01CC..01D8 - application data (kWinTune)
+; 01D9..01FF - 0boot stack
 ; 0200..02FF - 0boot data (grouped array)
 ; 0800..09FF - boot code as read from disk
 
@@ -28,7 +29,8 @@
 ; 00F9..00FC - application data (ProgressIndicators, persists from boot phase)
 ; 00FD..01BF - unused
 ; 01C0..01CB - application code (DisplayProgress, persists from boot phase)
-; 01CC..01FF - application stack
+; 01CC..01D8 - application data (kWinTune)
+; 01D9..01FF - application stack
 ; 0200..0267 - clobbered by nth() and exists()
 ; 0268..02FF - unused
 ; 0300..03FF - application code and strings
@@ -40,6 +42,7 @@
 ; soft switches
 KBD =          $C000      ; last key pressed (if any)
 CLEARKBD =     $C010      ; clear last key pressed
+SPEAKER =      $C030
 
 ; ROM routines and addresses
 TEXTTOP      = $22        ; byte
@@ -66,6 +69,7 @@ gProgressIndicatorIndex = $03 ; byte
 WaitForKey   = $00EA
 kProgressIndicators = $F9
 DisplayProgress = $1C0
+kWinTune = DisplayProgress+$0C
 
 tempstor=$200 ;requires 26*tblsize(4) bytes
 
