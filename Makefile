@@ -14,6 +14,8 @@
 # https://sourceforge.net/projects/acme-crossass/
 ACME=acme
 
+PYTHON=python3
+
 BUILDDISK=build/untitled.dsk
 
 asm:
@@ -25,12 +27,12 @@ asm:
 dist: asm
 	split -d -b256 build/0boot build/0boot
 	cat build/0boot00 > "$(BUILDDISK)"
-	dd if=/dev/null of="$(BUILDDISK)" bs=1 count=1 seek=3584 2>>build/log
+	dd if=/dev/null of="$(BUILDDISK)" bs=1 count=1 seek=512 2>>build/log
 	cat build/0boot01 >> "$(BUILDDISK)"
 	dd if=/dev/null of="$(BUILDDISK)" bs=1 count=1 seek=4K 2>>build/log
 	cat build/UNTITLED >> "$(BUILDDISK)"
 	dd if=/dev/null of=$(BUILDDISK) bs=1 count=1 seek=140K 2>>build/log
-
+	$(PYTHON) bin/do2physical.py "$(BUILDDISK)"
 clean:
 	rm -rf build/
 
