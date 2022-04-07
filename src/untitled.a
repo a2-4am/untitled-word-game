@@ -236,8 +236,9 @@ SubmitGuess
          dec   counter
          and   #$1F
          sta   <gActiveGuess-2, x    ; highlight letter in guess (inverse)
-         sta   <gSolutionCopy-2, x   ; clobber letter in solution so we don't double-count
          tay
+         lda   #0
+         sta   <gSolutionCopy-2, x   ; clobber letter in solution so we don't double-count
          lda   kAlphabetLetterIndex-1, y
          tay
          lda   <gActiveGuess-2, x
