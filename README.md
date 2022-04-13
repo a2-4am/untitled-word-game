@@ -1,6 +1,6 @@
-Untitled Word Game is a Wordle clone for 8-bit Apple II computers. It runs on the "rev. 0" Apple II from 1977 (or any later model). It requires only 16KB of RAM.
+Untitled Word Game is a Wordle clone for 8-bit Apple II computers. It runs on the "rev. 0" Apple II from 1977 (or any later model). It requires only 16KB of RAM. [Download the latest Untitled Word Game disk image](https://github.com/a2-4am/untitled-word-game/releases/tag/v1.0) (version **1.0**, released **2022-04-13**) or [play it online](https://archive.org/details/UntitledWordGame).
 
-For ease of use on modern emulators, it is distributed at a 16-sector floppy disk image. (This is slightly ahistorical. Apple did not ship a floppy drive until 1978, and did not ship a 16-sector floppy drive until 1980.)
+For ease of use on modern emulators, the game is distributed as a 16-sector floppy disk image. This is slightly ahistorical. Apple did not ship a floppy drive until 1978, and did not ship a 16-sector floppy drive until 1980. You'll be okay.
 
 The game is fully playable and feature-complete. It randomly picks from a curated list of 2048 five-letter words and validates your guesses against a list of 9330 words. There is no "daily" play, just random puzzles as long as your Apple II can draw breath. It even plays a little tune when you win.
 
