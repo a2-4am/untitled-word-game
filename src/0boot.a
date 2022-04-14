@@ -77,6 +77,9 @@
         pha                     ;assumes interleavetbl=$100
         dex
         bpl     -
+} else {
+        ldx     #$FF
+        txs
 }
         lda     #>(entry-1)
         pha

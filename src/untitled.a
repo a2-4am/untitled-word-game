@@ -177,7 +177,7 @@ PER_GUESS_GLOBALS_LEN=*-PER_GUESS_GLOBALS
 *=$750
          !text "                                        "
 *=$7D0
-         !text "       V1.0 (C) 2022 4AM & QKUMBA       "
+         !text "      V1.0.1 (C) 2022 4AM & QKUMBA      "
 *=$678
          jsr   ROM_TEXT
          lda   #$04
