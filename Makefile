@@ -25,13 +25,13 @@ asm:
 	$(ACME) -r build/0boot.lst src/0boot.a 2>>build/log
 
 dist: asm
-	split -d -b256 build/0boot build/0boot
-	cat build/0boot00 > "$(BUILDDISK)"
+	split -b256 build/0boot build/0boot
+	cat build/0bootaa > "$(BUILDDISK)"
 	dd if=/dev/null of="$(BUILDDISK)" bs=1 count=1 seek=512 2>>build/log
-	cat build/0boot01 >> "$(BUILDDISK)"
-	dd if=/dev/null of="$(BUILDDISK)" bs=1 count=1 seek=4K 2>>build/log
+	cat build/0bootab >> "$(BUILDDISK)"
+	dd if=/dev/null of="$(BUILDDISK)" bs=1 count=1 seek=4k 2>>build/log
 	cat build/UNTITLED >> "$(BUILDDISK)"
-	dd if=/dev/null of=$(BUILDDISK) bs=1 count=1 seek=140K 2>>build/log
+	dd if=/dev/null of=$(BUILDDISK) bs=1 count=1 seek=140k 2>>build/log
 	$(PYTHON) bin/do2physical.py "$(BUILDDISK)"
 clean:
 	rm -rf build/
