@@ -186,6 +186,11 @@ preread         ;must exit with carry set!
         sta     DisplayProgress, x
         dex
         bpl     -
+        ldx     #PRINT_ACTIVE_WINDOW_LEN-1
+-       lda     PRINT_ACTIVE_WINDOW_SRC, x
+        sta     nPrintActiveRow, x
+        dex
+        bpl     -
         ldx     #INIT_WINDOW_LEN-1
 -       lda     INIT_WINDOW_SRC, x
         sta     InitWindow, x
@@ -203,6 +208,12 @@ DISPLAY_PROGRESS_SRC
          rts
          !byte $E9,$AF,$B8,$D0,$E9,$B8,$D0,$AF,$B8,$9A,$AF,$89,$9A
 DISPLAY_PROGRESS_LEN=*-DISPLAY_PROGRESS_SRC
+
+PRINT_ACTIVE_WINDOW_SRC
+         jsr   iPrintActiveRow
+         lda   #$B0
+         rts
+PRINT_ACTIVE_WINDOW_LEN=*-PRINT_ACTIVE_WINDOW_SRC
 
 INIT_WINDOW_SRC
          lda   #$04

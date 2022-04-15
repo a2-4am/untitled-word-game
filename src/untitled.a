@@ -181,8 +181,8 @@ PER_GUESS_GLOBALS_LEN=*-PER_GUESS_GLOBALS
 *=$7F8
 BadGuess
 @incdec  inc   <gActiveRow+1
-         jsr   PrintActiveRow
-         lda   #$B0
+         !byte $A9, 00               ; dummy instruction covers ROM-altered byte
+         jsr   nPrintActiveRow
          jsr   ROM_WAIT
          lda   @incdec
          eor   #$20                  ; INC <-> DEC
@@ -366,6 +366,9 @@ DeleteLetter
 !warn *
 !if *>$4000 {
   !serious "out of space ", *
+}
+!if iPrintActiveRow != PrintActiveRow {
+  !serious "PrintActiveRow starts at ",PrintActiveRow, ", must adjust constants.a and rebuild 0boot"
 }
 !if iWaitForKeyThenNewGame != WaitForKeyThenNewGame {
   !serious "WaitForKeyThenNewGame starts at ",WaitForKeyThenNewGame, ", must adjust constants.a and rebuild 0boot"
