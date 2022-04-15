@@ -11,7 +11,7 @@
         tracks    = $04         ;user-defined
         first_trk = $01         ;user-defined
         address   = $03         ;user-defined, high byte of first page
-        entry     = $678        ;user-defined
+        entry     = $180        ;user-defined
         sectors   = $00         ;user-defined, sectors to load from partial track (increase tracks count first)
         interleave= 0           ;user-defined, to retain .dsk sector ordering
         multi_regn= 0           ;user-defined, load to non-sequential addresses
@@ -186,6 +186,11 @@ preread         ;must exit with carry set!
         sta     DisplayProgress, x
         dex
         bpl     -
+        ldx     #INIT_WINDOW_LEN-1
+-       lda     INIT_WINDOW_SRC, x
+        sta     InitWindow, x
+        dex
+        bpl     -
         rts
 
 DISPLAY_PROGRESS_SRC
@@ -198,6 +203,15 @@ DISPLAY_PROGRESS_SRC
          rts
          !byte $E9,$AF,$B8,$D0,$E9,$B8,$D0,$AF,$B8,$9A,$AF,$89,$9A
 DISPLAY_PROGRESS_LEN=*-DISPLAY_PROGRESS_SRC
+
+INIT_WINDOW_SRC
+         lda   #$04
+         sta   TEXTTOP
+         lda   #$15
+         sta   TEXTBOTTOM
+         jmp   iWaitForKeyThenNewGame
+INIT_WINDOW_LEN=*-INIT_WINDOW_SRC
+
 
 !if interleave=1 {
 sectbl !byte 0,7,$e,6,$d,5,$c,4,$b,3,$a,2,9,1,8,$f
@@ -371,7 +385,7 @@ set_address
 }
 
 addrtbl
-        !word   driveoff-1, ROM_IN0-1, ROM_PR0-1, ROM_NORMAL-1
+        !word   driveoff-1, ROM_IN0-1, ROM_PR0-1, ROM_NORMAL-1, ROM_TEXT-1
 stackend
 patchtbl
         !byte   <(slotpatch1+1), <(slotpatch2+1), <(slotpatch3+1), <(slotpatch4+1), <(slotpatch5+1), <(slotpatch7+1)

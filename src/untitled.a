@@ -177,18 +177,7 @@ PER_GUESS_GLOBALS_LEN=*-PER_GUESS_GLOBALS
 *=$750
          !text "                                        "
 *=$7D0
-         !text "      V1.0.1 (C) 2022 4AM & QKUMBA      "
-*=$678
-         jsr   ROM_TEXT
-         lda   #$04
-         jmp   $6F8
-*=$6F8
-         sta   TEXTTOP
-         lda   #$15
-         jmp   $778
-*=$778
-         sta   TEXTBOTTOM
-         jmp   WaitForKeyThenNewGame
+         !text "      V1.0.2 (C) 2022 4AM & QKUMBA      "
 *=$7F8
 BadGuess
 @incdec  inc   <gActiveRow+1
@@ -377,4 +366,7 @@ DeleteLetter
 !warn *
 !if *>$4000 {
   !serious "out of space ", *
+}
+!if iWaitForKeyThenNewGame != WaitForKeyThenNewGame {
+  !serious "WaitForKeyThenNewGame starts at ",WaitForKeyThenNewGame, ", must adjust constants.a and rebuild 0boot"
 }
